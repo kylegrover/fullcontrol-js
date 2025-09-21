@@ -26,6 +26,7 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
-    "rimraf": "^5.0.0"
+    "rimraf": "^5.0.0",
+    "@types/node": "^20.11.0"
   }
 }

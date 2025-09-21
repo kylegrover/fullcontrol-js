@@ -13,7 +13,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "lib": ["DOM", "ES2022"],
-    "types": []
+  "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]

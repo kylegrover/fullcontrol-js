@@ -29,7 +29,15 @@ export function generate_gcode(state: State) {
 
     if (step instanceof Point) {
       state.addPoint(step)
-      if (prevPoint) {
+      if (!prevPoint) {
+        // Emit initial positioning move if coordinates present
+        let line = 'G0'
+        if (step.x != null) line += ` X${fmt(step.x,3)}`
+        if (step.y != null) line += ` Y${fmt(step.y,3)}`
+        if (step.z != null) line += ` Z${fmt(step.z,3)}`
+        state.addGcode(line)
+        lastLine = line
+      } else {
         const moveDist = distance(prevPoint, step)
         const isExtrude = !!step.extrude && geometry?.area && currentExtruder
         let line = isExtrude ? 'G1' : 'G0'
@@ -69,7 +77,14 @@ export function generate_gcode(state: State) {
       for (const p of step as Point[]) {
         // recurse logic by pushing back into loop? Simpler: duplicate block
         state.addPoint(p)
-        if (prevPoint) {
+        if (!prevPoint) {
+          let line = 'G0'
+          if (p.x != null) line += ` X${fmt(p.x,3)}`
+          if (p.y != null) line += ` Y${fmt(p.y,3)}`
+          if (p.z != null) line += ` Z${fmt(p.z,3)}`
+          state.addGcode(line)
+          lastLine = line
+        } else {
           const moveDist = distance(prevPoint, p)
           const isExtrude = !!p.extrude && geometry?.area && currentExtruder
           let line = isExtrude ? 'G1' : 'G0'

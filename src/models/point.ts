@@ -9,6 +9,6 @@ export class Point extends BaseModelPlus {
   speed?: number // optional per-move speed override
   static readonly typeName = 'Point'
   constructor(init?: Partial<Point>) { super(init) }
-  toJSON() { return { x: this.x, y: this.y, z: this.z, color: this.color } }
+  toJSON() { return { x: this.x, y: this.y, z: this.z, color: this.color, extrude: this.extrude, speed: this.speed } }
   static fromJSON(data: any) { return new Point(data) }
 }

@@ -1,6 +1,8 @@
 # FullControl JS (TypeScript Port)
 
-Modern TypeScript/JavaScript implementation of the core FullControl design + G-code generation pipeline. Browser-first, Node supported. Provides a near-parity API surface with the original Python library while embracing idiomatic JavaScript.
+Modern TypeScript/JavaScript implementation of the core FullControl design + G-code generation pipeline. Browser-first, Node supported. Mirrors the authoritative Python library; primary development occurs in Python and this package tracks released Python features.
+
+> Parity: `pythonParity` in `package.json` indicates the Python version matched (currently 0.0.0 placeholder for first publish). Patch releases may fix JS-specific issues without adding new Python features.
 
 ## Features
 - Mutable model objects (`Point`, `Extruder`, `Printer`, etc.)
@@ -13,12 +15,12 @@ Modern TypeScript/JavaScript implementation of the core FullControl design + G-c
 
 ## Install
 ```bash
-npm install @fullcontrol/fullcontrol
+npm install fullcontrol-js
 ```
 
 ## Quick Start
 ```ts
-import { Point, Printer, Extruder, ExtrusionGeometry, transform } from '@fullcontrol/fullcontrol'
+import { Point, Printer, Extruder, ExtrusionGeometry, transform } from 'fullcontrol-js'
 
 const printer = new Printer({ print_speed: 1800, travel_speed: 6000 })
 const extruder = new Extruder({ units: 'mm', dia_feed: 1.75, relative_gcode: false, travel_format: 'G1_E0' })
@@ -58,7 +60,7 @@ Call `ExtrusionGeometry.update_area()` automatically handled in pipeline when ge
 
 ## Export / Import
 ```ts
-import { export_design, import_design } from '@fullcontrol/fullcontrol'
+import { export_design, import_design } from 'fullcontrol-js'
 const steps = [printer, extruder, geom, path]
 const json = export_design(steps)
 // Provide your own registry mapping type name -> class
@@ -80,4 +82,4 @@ See `examples/` for more patterns:
 - Optional E/volume normalization strategies.
 
 ## License
-MIT (follow upstream project licensing guidance if integrating original assets).
+GPL-3.0 (inherits copyleft requirements; see `license` file). Ensure compliance when redistributing or combining. Upstream Python project licensing guidance applies.

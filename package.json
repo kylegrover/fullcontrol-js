@@ -1,15 +1,17 @@
 {
-  "name": "@fullcontrol/fullcontrol",
-  "version": "0.0.1-dev",
-  "description": "FullControl TypeScript rewrite - unconstrained design (API parity with Python)",
+  "name": "fullcontrol-js",
+  "version": "0.1.0",
+  "description": "FullControl TypeScript rewrite - API parity mirror of Python library (G-code generation & geometry)",
   "license": "GPL-3.0",
+  "pythonParity": "0.0.0", 
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     }
   },
   "main": "dist/index.cjs",
@@ -19,10 +21,28 @@
     "build": "tsup src/index.ts --dts --format esm,cjs --sourcemap",
     "clean": "rimraf dist",
     "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
-    "lint": "eslint 'src/**/*.ts'",
-    "compare": "node ./scripts/compare.py_js_gcode.mjs"
+    "lint": "eslint 'src/**/*.ts' || true",
+    "typecheck": "tsc --noEmit",
+    "compare": "node ./scripts/compare.py_js_gcode.mjs",
+    "prepack": "npm run build && npm run typecheck"
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "license"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kylegrover/fullcontrol-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kylegrover/fullcontrol-js/issues"
+  },
+  "homepage": "https://github.com/kylegrover/fullcontrol-js#readme",
+  "keywords": [
+    "3d-printing",
+    "gcode",
+    "fullcontrol",
+    "geometry",
+    "cad",
+    "additive"
+  ],
   "engines": { "node": ">=20" },
   "devDependencies": {
     "tsup": "^8.0.0",

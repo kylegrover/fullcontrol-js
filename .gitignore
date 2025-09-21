@@ -7,4 +7,4 @@ dist
 .vscode
 
 
-*-dev.tgz
+*.tgz

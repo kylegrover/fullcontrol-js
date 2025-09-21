@@ -1,0 +1,31 @@
+{
+  "name": "@fullcontrol/fullcontrol",
+  "version": "0.0.1-dev",
+  "description": "FullControl TypeScript rewrite - unconstrained design (API parity with Python)",
+  "license": "GPL-3.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format esm,cjs --sourcemap",
+    "clean": "rimraf dist",
+    "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
+    "lint": "eslint 'src/**/*.ts'"
+  },
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "rimraf": "^5.0.0"
+  }
+}

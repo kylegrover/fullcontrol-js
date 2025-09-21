@@ -7,11 +7,14 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-const root = path.resolve(new URL('.', import.meta.url).pathname, '..', '..')
+// Resolve project root robustly across platforms (Windows file URL starts with /C:/)
+const scriptDir = fileURLToPath(new URL('.', import.meta.url))
+const root = path.resolve(scriptDir, '..')
 const dist = path.join(root, 'dist', 'index.js')
 if (!fs.existsSync(dist)) {
-  console.error('Build output missing. Run: npm run build')
+  console.error(`Build output missing. (Checked: ${dist}) Run: npm run build`)
   process.exit(1)
 }
 

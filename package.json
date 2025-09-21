@@ -43,7 +43,7 @@
     "cad",
     "additive"
   ],
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=16" },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",

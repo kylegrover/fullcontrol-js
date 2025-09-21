@@ -2,6 +2,8 @@
 
 Modern TypeScript/JavaScript implementation of the core FullControl design + G-code generation pipeline. Browser-first, Node supported. Mirrors the authoritative Python library; primary development occurs in Python and this package tracks released Python features.
 
+Runtime Support: Node 16+ (ES2020 output) and modern evergreen browsers.
+
 > Parity: `pythonParity` in `package.json` indicates the Python version matched (currently 0.0.0 placeholder for first publish). Patch releases may fix JS-specific issues without adding new Python features.
 
 ## Features

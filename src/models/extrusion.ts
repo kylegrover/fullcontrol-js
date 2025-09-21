@@ -39,6 +39,8 @@ export class Extruder extends BaseModelPlus {
   total_volume?: number
   total_volume_ref?: number
   travel_format?: 'G1_E0' | 'none'
+  retraction_length?: number
+  retraction_speed?: number
   static readonly typeName = 'Extruder'
   constructor(init?: Partial<Extruder>) { super(init) }
   update_e_ratio() {
@@ -55,4 +57,22 @@ export class Extruder extends BaseModelPlus {
   }
   toJSON() { return { on: this.on, units: this.units, dia_feed: this.dia_feed, relative_gcode: this.relative_gcode } }
   static fromJSON(d: any) { return new Extruder(d) }
+}
+
+export class Retraction extends BaseModelPlus {
+  length?: number // override extruder default
+  speed?: number // mm/min feedrate for retraction move
+  static readonly typeName = 'Retraction'
+  constructor(init?: Partial<Retraction>) { super(init) }
+  toJSON() { return { length: this.length, speed: this.speed } }
+  static fromJSON(d: any) { return new Retraction(d) }
+}
+
+export class Unretraction extends BaseModelPlus {
+  length?: number
+  speed?: number
+  static readonly typeName = 'Unretraction'
+  constructor(init?: Partial<Unretraction>) { super(init) }
+  toJSON() { return { length: this.length, speed: this.speed } }
+  static fromJSON(d: any) { return new Unretraction(d) }
 }

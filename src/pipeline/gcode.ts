@@ -1,6 +1,6 @@
 import { State } from './state.js'
 import { Point } from '../models/point.js'
-import { Extruder, ExtrusionGeometry, StationaryExtrusion } from '../models/extrusion.js'
+import { Extruder, ExtrusionGeometry, StationaryExtrusion, Retraction, Unretraction } from '../models/extrusion.js'
 import { Printer } from '../models/printer.js'
 import { ManualGcode, GcodeComment, PrinterCommand, GcodeStateLike } from '../models/commands.js'
 
@@ -126,6 +126,45 @@ export function generate_gcode(state: State) {
     // Printer / Extruder registration
     if (step instanceof Printer) { state.printer = step; gstate.printer = step; continue }
     if (step instanceof Extruder) { state.extruders.push(step); if (!currentExtruder) currentExtruder = step; continue }
+    if (step instanceof Retraction) {
+      if (!currentExtruder) continue
+      currentExtruder.update_e_ratio()
+      const length = step.length ?? currentExtruder.retraction_length ?? 0
+      const vol = length * (currentExtruder.units === 'mm3' ? 1 : (1 / (currentExtruder.volume_to_e || 1)))
+      // negative extrusion for retraction
+      const eVal = currentExtruder.get_and_update_volume(-vol) * (currentExtruder.volume_to_e || 1)
+      let line = 'G1'
+      line += ` E${fmt(eVal,5)}`
+      if (step.speed != null && state.printer) {
+        state.printer.print_speed = step.speed
+        state.printer.speed_changed = true
+        const fSnippet = state.printer.f_gcode(true)
+        if (fSnippet.trim()) line += ' ' + fSnippet.trim()
+        state.printer.speed_changed = false
+      }
+      state.addGcode(line)
+      lastLine = line
+      continue
+    }
+    if (step instanceof Unretraction) {
+      if (!currentExtruder) continue
+      currentExtruder.update_e_ratio()
+      const length = step.length ?? currentExtruder.retraction_length ?? 0
+      const vol = length * (currentExtruder.units === 'mm3' ? 1 : (1 / (currentExtruder.volume_to_e || 1)))
+      const eVal = currentExtruder.get_and_update_volume(vol) * (currentExtruder.volume_to_e || 1)
+      let line = 'G1'
+      line += ` E${fmt(eVal,5)}`
+      if (step.speed != null && state.printer) {
+        state.printer.print_speed = step.speed
+        state.printer.speed_changed = true
+        const fSnippet = state.printer.f_gcode(true)
+        if (fSnippet.trim()) line += ' ' + fSnippet.trim()
+        state.printer.speed_changed = false
+      }
+      state.addGcode(line)
+      lastLine = line
+      continue
+    }
     if (step instanceof StationaryExtrusion) {
       if (!currentExtruder) continue
       currentExtruder.update_e_ratio()

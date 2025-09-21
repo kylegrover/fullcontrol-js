@@ -1,4 +1,5 @@
 import { Point } from '../models/point.js'
+import { register, get_registered } from '../internal/registry.js'
 
 export function flatten<T>(steps: (T | T[])[]): T[] {
   return steps.flatMap(s => Array.isArray(s) ? s : [s])
@@ -76,4 +77,10 @@ export function import_design(registry: Record<string, any>, jsonOrFilename: str
     if (!cls) throw new Error(`Unknown design type '${o.type}'`)
     return cls.fromJSON ? cls.fromJSON(o.data) : new cls(o.data)
   })
+}
+
+export function build_default_registry(): Record<string, any> {
+  // dynamic approach: rely on classes having been imported and registered explicitly elsewhere if desired
+  // For now user supplies registry; helper kept for API parity placeholder.
+  return {}
 }

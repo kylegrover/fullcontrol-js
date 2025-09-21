@@ -1,0 +1,83 @@
+# FullControl JS (TypeScript Port)
+
+Modern TypeScript/JavaScript implementation of the core FullControl design + G-code generation pipeline. Browser-first, Node supported. Provides a near-parity API surface with the original Python library while embracing idiomatic JavaScript.
+
+## Features
+- Mutable model objects (`Point`, `Extruder`, `Printer`, etc.)
+- Geometry helpers (polar, move, reflect, arcs, segmentation, shapes, waves…)
+- Extrusion geometry area models: rectangle, stadium, circle, manual
+- G-code pipeline: movement + extrusion E accumulation (absolute or relative)
+- Manual / command list G-code insertion + inline comments
+- Design export/import (JSON) + class registry hook
+- Plot data builder for external visualization (structured only)
+
+## Install
+```bash
+npm install @fullcontrol/fullcontrol
+```
+
+## Quick Start
+```ts
+import { Point, Printer, Extruder, ExtrusionGeometry, transform } from '@fullcontrol/fullcontrol'
+
+const printer = new Printer({ print_speed: 1800, travel_speed: 6000 })
+const extruder = new Extruder({ units: 'mm', dia_feed: 1.75, relative_gcode: false, travel_format: 'G1_E0' })
+const geom = new ExtrusionGeometry({ area_model: 'rectangle', width: 0.45, height: 0.2 })
+
+// Simple square path (extruding)
+const z = 0.2
+const path = [
+  new Point({ x: 0, y: 0, z, extrude: false }),
+  new Point({ x: 20, y: 0, z, extrude: true }),
+  new Point({ x: 20, y: 20, z, extrude: true }),
+  new Point({ x: 0, y: 20, z, extrude: true }),
+  new Point({ x: 0, y: 0, z, extrude: true })
+]
+
+const { gcode } = transform([printer, extruder, geom, path])
+console.log(gcode)
+```
+
+## G-code Generation Notes
+- Per-move feedrate appended only when changed (Printer sets `speed_changed` internally via point `speed` override).
+- `Extruder.units`:
+  - `mm3`: E equals volumetric mm^3 (ratio = 1)
+  - `mm`: E equals filament length; ratio computed from `dia_feed` diameter
+- `Extruder.relative_gcode = true` resets volume reference after each move.
+- `travel_format: 'G1_E0'` appends `E0` on non-extrusion moves (useful for some slicer conventions).
+
+## Area Models
+| Model | Parameters | Formula |
+|-------|------------|---------|
+| rectangle | width, height | `width * height` |
+| stadium | width, height | `(width - height)*height + PI*(height/2)^2` |
+| circle | diameter | `PI*(d/2)^2` |
+| manual | area (set directly) | (unchanged) |
+
+Call `ExtrusionGeometry.update_area()` automatically handled in pipeline when geometry present.
+
+## Export / Import
+```ts
+import { export_design, import_design } from '@fullcontrol/fullcontrol'
+const steps = [printer, extruder, geom, path]
+const json = export_design(steps)
+// Provide your own registry mapping type name -> class
+const registry = { Printer, Extruder, ExtrusionGeometry, Point }
+const restored = import_design(registry, json)
+```
+
+## Visualization Data
+`transform().plot` returns `{ points: [{x,y,z,color?}], annotations: [] }` – feed into your own renderer.
+
+## Examples
+See `examples/` for more patterns:
+- `basic-line.ts`: one extrusion move
+- `square.ts`: perimeter path
+- `spiral.ts`: spiral helix demo (uses geometry helpers)
+
+## Roadmap
+- Additional parity: advanced transforms, color handling modes, richer annotation semantics.
+- Optional E/volume normalization strategies.
+
+## License
+MIT (follow upstream project licensing guidance if integrating original assets).

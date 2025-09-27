@@ -30,3 +30,6 @@ export * from './pipeline/gcode.js'
 export * from './pipeline/visualize.js'
 export * from './pipeline/transform.js'
 
+// devices loader
+export { import_printer } from './devices/community/singletool/import_printer.js'
+

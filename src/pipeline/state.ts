@@ -19,7 +19,7 @@ export class State {
   printer?: Printer
   annotations: any[] = []
 
-  constructor(steps: Step[]) { this.steps = flatten(steps) }
+  constructor(steps: Step[] = []) { this.steps = flatten(steps) }
 
   addPoint(p: Point) {
     this.points.push(p)

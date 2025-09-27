@@ -48,10 +48,11 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
       state.addPoint(step)
       if (!prevPoint) {
         // Emit initial positioning move if coordinates present
-        let line = (currentExtruder?.on || (step as any).extrude) ? 'G1' : 'G0'
+        let line = (currentExtruder?.on || (step as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
         if (step.x != null) line += ` X${fmtCoord(step.x)}`
         if (step.y != null) line += ` Y${fmtCoord(step.y)}`
         if (step.z != null) line += ` Z${fmtCoord(step.z)}`
+        if (!(currentExtruder?.on || (step as any).extrude) && currentExtruder?.travel_format === 'G1_E0') line += ' E0'
         // feedrate if first move and speed set
         if (state.printer) {
           if (step.speed != null) {
@@ -69,7 +70,7 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
         const moveDist = distance(prevPoint, step)
         const extrudingFlag = currentExtruder?.on || (step as any).extrude
         const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
-        let line = extrudingFlag ? 'G1' : 'G0'
+        let line = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
         if (step.x != null) line += ` X${fmtCoord(step.x)}`
         if (step.y != null) line += ` Y${fmtCoord(step.y)}`
         if (step.z != null) line += ` Z${fmtCoord(step.z)}`
@@ -106,10 +107,11 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
         // recurse logic by pushing back into loop? Simpler: duplicate block
         state.addPoint(p)
         if (!prevPoint) {
-          let line = (currentExtruder?.on || (p as any).extrude) ? 'G1' : 'G0'
+          let line = (currentExtruder?.on || (p as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
           if (p.x != null) line += ` X${fmtCoord(p.x)}`
           if (p.y != null) line += ` Y${fmtCoord(p.y)}`
           if (p.z != null) line += ` Z${fmtCoord(p.z)}`
+          if (!(currentExtruder?.on || (p as any).extrude) && currentExtruder?.travel_format === 'G1_E0') line += ' E0'
           if (state.printer) {
             if (p.speed != null) {
               if (currentExtruder?.on) state.printer.print_speed = p.speed; else state.printer.travel_speed = p.speed
@@ -125,7 +127,7 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
           const moveDist = distance(prevPoint, p)
           const extrudingFlag = currentExtruder?.on || (p as any).extrude
           const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
-          let line = extrudingFlag ? 'G1' : 'G0'
+          let line = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
           if (p.x != null) line += ` X${fmtCoord(p.x)}`
           if (p.y != null) line += ` Y${fmtCoord(p.y)}`
           if (p.z != null) line += ` Z${fmtCoord(p.z)}`

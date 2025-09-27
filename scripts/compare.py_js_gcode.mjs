@@ -38,11 +38,45 @@ const cases = [
       const pts = [ new Point({ x:0, y:0, z:0.2, extrude:false }), new Point({ x:10, y:0, z:0.2, extrude:true }) ]
       return transform([printer, extruder, geom, pts]).gcode
     }
+  },
+  {
+    name: 'extruder_on_toggle_travel',
+    py: `from fullcontrol import Point, Printer, Extruder, ExtrusionGeometry, transform, travel_to\n`+
+        `printer=Printer(print_speed=1800, travel_speed=6000)\n`+
+        `extruder=Extruder(units='mm', dia_feed=1.75, relative_gcode=False, travel_format='G1_E0')\n`+
+        `geom=ExtrusionGeometry(area_model='rectangle', width=0.4, height=0.2)\n`+
+        `pts=[Point(x=0,y=0,z=0.2), Point(x=5,y=0,z=0.2, extrude=True)]\n`+
+        `seq=[printer, extruder, geom, pts] + travel_to(Point(x=10,y=0,z=0.2)) + [Point(x=15,y=0,z=0.2, extrude=True)]\n`+
+        `print(transform(seq)['gcode'])`,
+    js: async (api) => {
+      const { Point, Printer, Extruder, ExtrusionGeometry, transform, travel_to } = api
+      const printer = new Printer({ print_speed: 1800, travel_speed: 6000 })
+      const extruder = new Extruder({ units: 'mm', dia_feed: 1.75, relative_gcode: false, travel_format: 'G1_E0' })
+      const geom = new ExtrusionGeometry({ area_model: 'rectangle', width: 0.4, height: 0.2 })
+      const pts = [ new Point({ x:0, y:0, z:0.2 }), new Point({ x:5, y:0, z:0.2, extrude:true }) ]
+      const seq = [printer, extruder, geom, pts, ...travel_to(new Point({ x:10, y:0, z:0.2 })), new Point({ x:15, y:0, z:0.2, extrude:true })]
+      return transform(seq).gcode
+    }
   }
 ]
 
+function detectPython() {
+  const candidates = ['python', 'python3', 'py']
+  for (const cmd of candidates) {
+    const r = spawnSync(cmd, ['-V'], { encoding: 'utf-8' })
+    if (r.status === 0) return cmd
+  }
+  return null
+}
+
+const PYTHON_CMD = detectPython()
+if (!PYTHON_CMD) {
+  console.error('No Python interpreter found (tried python, python3, py). Install Python or adjust PATH.')
+  process.exit(2)
+}
+
 function runPython(code) {
-  const r = spawnSync('python', ['-c', code], { encoding: 'utf-8' })
+  const r = spawnSync(PYTHON_CMD, ['-c', code], { encoding: 'utf-8' })
   if (r.error) throw r.error
   if (r.status !== 0) throw new Error('Python failed: '+r.stderr)
   return r.stdout.trim()

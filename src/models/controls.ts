@@ -5,6 +5,9 @@ export class GcodeControls extends BaseModelPlus {
   initialization_data?: Record<string, any>
   save_as?: string
   include_date?: boolean = true
+  show_banner: boolean = true
+  show_tips: boolean = true
+  silent: boolean = false
   static readonly typeName = 'GcodeControls'
   constructor(init?: Partial<GcodeControls>) { super(init) }
   initialize() {

@@ -3,6 +3,7 @@ import { Point } from '../models/point.js'
 import { Extruder, ExtrusionGeometry, StationaryExtrusion, Retraction, Unretraction } from '../models/extrusion.js'
 import { Printer } from '../models/printer.js'
 import { ManualGcode, GcodeComment, PrinterCommand, GcodeStateLike } from '../models/commands.js'
+import { GcodeControls } from '../models/controls.js'
 
 function distance(a: Point, b: Point) {
   const ax = a.x ?? b.x ?? 0, ay = a.y ?? b.y ?? 0, az = a.z ?? b.z ?? 0
@@ -17,12 +18,23 @@ const fmt = (v: number, p: number) => v.toFixed(p).replace(/\.0+$/,'').replace(/
 const fmtCoord = (v: number) => fmt(v, 3)
 const fmtExtrude = (v: number) => fmt(v, 6)
 
-export function generate_gcode(state: State) {
+export function generate_gcode(state: State, controls?: Partial<GcodeControls>) {
   let prevPoint: Point | undefined
   let lastLine: string | undefined
   const gstate: GcodeStateLike = { printer: state.printer || new Printer(), gcode: state.gcodeLines }
   let currentExtruder: Extruder | undefined = state.extruders[0]
   let geometry: ExtrusionGeometry | undefined
+  const showBanner = !controls?.silent && controls?.show_banner !== false
+  const showTips = !controls?.silent && controls?.show_tips !== false
+  if (showBanner) {
+    state.addGcode('; Time to print!!!!!')
+    state.addGcode('; GCode created with FullControl (JS) - tell us what you\'re printing!')
+    state.addGcode('; info@fullcontrol.xyz or tag FullControlXYZ on socials')
+  }
+  if (showTips) {
+    state.addGcode('; tips: enable/disable with GcodeControls.show_tips=false')
+    if (!state.printer) state.addGcode('; tip: set a Printer() early to ensure start gcode is included')
+  }
   // Attempt to locate first geometry object among steps if present
   for (const s of state.steps) if (s instanceof ExtrusionGeometry) { geometry = s; geometry.update_area(); break }
   for (const step of state.steps) {

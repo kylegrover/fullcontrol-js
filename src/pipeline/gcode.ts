@@ -11,7 +11,11 @@ function distance(a: Point, b: Point) {
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
+// Generic formatter: keep up to p decimals, trim trailing zeros and dot
 const fmt = (v: number, p: number) => v.toFixed(p).replace(/\.0+$/,'').replace(/(\.[0-9]*?)0+$/,'$1')
+// Specific formatters for parity clarity
+const fmtCoord = (v: number) => fmt(v, 3)
+const fmtExtrude = (v: number) => fmt(v, 6)
 
 export function generate_gcode(state: State) {
   let prevPoint: Point | undefined
@@ -33,9 +37,9 @@ export function generate_gcode(state: State) {
       if (!prevPoint) {
         // Emit initial positioning move if coordinates present
         let line = (currentExtruder?.on || (step as any).extrude) ? 'G1' : 'G0'
-        if (step.x != null) line += ` X${fmt(step.x,3)}`
-        if (step.y != null) line += ` Y${fmt(step.y,3)}`
-        if (step.z != null) line += ` Z${fmt(step.z,3)}`
+        if (step.x != null) line += ` X${fmtCoord(step.x)}`
+        if (step.y != null) line += ` Y${fmtCoord(step.y)}`
+        if (step.z != null) line += ` Z${fmtCoord(step.z)}`
         // feedrate if first move and speed set
         if (state.printer) {
           if (step.speed != null) {
@@ -54,14 +58,14 @@ export function generate_gcode(state: State) {
         const extrudingFlag = currentExtruder?.on || (step as any).extrude
         const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
         let line = extrudingFlag ? 'G1' : 'G0'
-        if (step.x != null) line += ` X${fmt(step.x,3)}`
-        if (step.y != null) line += ` Y${fmt(step.y,3)}`
-        if (step.z != null) line += ` Z${fmt(step.z,3)}`
+        if (step.x != null) line += ` X${fmtCoord(step.x)}`
+        if (step.y != null) line += ` Y${fmtCoord(step.y)}`
+        if (step.z != null) line += ` Z${fmtCoord(step.z)}`
         if (isExtrude) {
           currentExtruder.update_e_ratio()
           const volume = moveDist * geometry!.area!
           const eVol = currentExtruder.get_and_update_volume(volume) * (currentExtruder.volume_to_e || 1)
-          line += ` E${fmt(eVol,5)}`
+          line += ` E${fmtExtrude(eVol)}`
         } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
           line += ' E0'
         }
@@ -91,9 +95,9 @@ export function generate_gcode(state: State) {
         state.addPoint(p)
         if (!prevPoint) {
           let line = (currentExtruder?.on || (p as any).extrude) ? 'G1' : 'G0'
-          if (p.x != null) line += ` X${fmt(p.x,3)}`
-          if (p.y != null) line += ` Y${fmt(p.y,3)}`
-          if (p.z != null) line += ` Z${fmt(p.z,3)}`
+          if (p.x != null) line += ` X${fmtCoord(p.x)}`
+          if (p.y != null) line += ` Y${fmtCoord(p.y)}`
+          if (p.z != null) line += ` Z${fmtCoord(p.z)}`
           if (state.printer) {
             if (p.speed != null) {
               if (currentExtruder?.on) state.printer.print_speed = p.speed; else state.printer.travel_speed = p.speed
@@ -110,14 +114,14 @@ export function generate_gcode(state: State) {
           const extrudingFlag = currentExtruder?.on || (p as any).extrude
           const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
           let line = extrudingFlag ? 'G1' : 'G0'
-          if (p.x != null) line += ` X${fmt(p.x,3)}`
-          if (p.y != null) line += ` Y${fmt(p.y,3)}`
-          if (p.z != null) line += ` Z${fmt(p.z,3)}`
+          if (p.x != null) line += ` X${fmtCoord(p.x)}`
+          if (p.y != null) line += ` Y${fmtCoord(p.y)}`
+          if (p.z != null) line += ` Z${fmtCoord(p.z)}`
           if (isExtrude) {
             currentExtruder!.update_e_ratio()
             const volume = moveDist * geometry!.area!
             const eVol = currentExtruder!.get_and_update_volume(volume) * (currentExtruder!.volume_to_e || 1)
-            line += ` E${fmt(eVol,5)}`
+            line += ` E${fmtExtrude(eVol)}`
           } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
             line += ' E0'
           }
@@ -209,7 +213,7 @@ export function generate_gcode(state: State) {
       // negative extrusion for retraction
       const eVal = currentExtruder.get_and_update_volume(-vol) * (currentExtruder.volume_to_e || 1)
       let line = 'G1'
-      line += ` E${fmt(eVal,5)}`
+      line += ` E${fmtExtrude(eVal)}`
       if (step.speed != null && state.printer) {
         state.printer.print_speed = step.speed
         state.printer.speed_changed = true
@@ -228,7 +232,7 @@ export function generate_gcode(state: State) {
       const vol = length * (currentExtruder.units === 'mm3' ? 1 : (1 / (currentExtruder.volume_to_e || 1)))
       const eVal = currentExtruder.get_and_update_volume(vol) * (currentExtruder.volume_to_e || 1)
       let line = 'G1'
-      line += ` E${fmt(eVal,5)}`
+      line += ` E${fmtExtrude(eVal)}`
       if (step.speed != null && state.printer) {
         state.printer.print_speed = step.speed
         state.printer.speed_changed = true
@@ -245,7 +249,7 @@ export function generate_gcode(state: State) {
       currentExtruder.update_e_ratio()
       const eVol = currentExtruder.get_and_update_volume(step.volume) * (currentExtruder.volume_to_e || 1)
       let line = 'G1'
-      line += ` E${fmt(eVol,5)}`
+      line += ` E${fmtExtrude(eVol)}`
       if (step.speed != null && state.printer) {
         state.printer.print_speed = step.speed
         state.printer.speed_changed = true

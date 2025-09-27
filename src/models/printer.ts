@@ -12,7 +12,8 @@ export class Printer extends BaseModelPlus {
     if (this.speed_changed) {
       const speed = extruding ? this.print_speed : this.travel_speed
       if (speed != null) {
-        return `F${speed.toFixed(1).replace(/\.0+$/, '')} `
+        // one decimal then trim trailing zeros and dot
+        return `F${speed.toFixed(1).replace(/\.0+$/, '').replace(/\.$/, '')} `
       }
     }
     return ''

@@ -1,4 +1,11 @@
 import { Point } from '../models/point.js'
+import { Vector } from '../models/vector.js'
+import { Extruder, ExtrusionGeometry, StationaryExtrusion, Retraction, Unretraction } from '../models/extrusion.js'
+import { Printer } from '../models/printer.js'
+import { Fan, Hotend, Buildplate } from '../models/components.js'
+import { PrinterCommand, ManualGcode, GcodeComment } from '../models/commands.js'
+import { GcodeControls, PlotControls } from '../models/controls.js'
+import { PlotAnnotation } from '../models/annotations.js'
 import { register, get_registered } from '../internal/registry.js'
 
 export function flatten<T>(steps: (T | T[])[]): T[] {
@@ -80,7 +87,17 @@ export function import_design(registry: Record<string, any>, jsonOrFilename: str
 }
 
 export function build_default_registry(): Record<string, any> {
-  // dynamic approach: rely on classes having been imported and registered explicitly elsewhere if desired
-  // For now user supplies registry; helper kept for API parity placeholder.
-  return {}
+  const reg: Record<string, any> = {}
+  const add = (cls: any) => { if (cls && (cls as any).typeName) reg[(cls as any).typeName] = cls }
+  // Core models
+  ;[
+    Point, Vector,
+    Extruder, ExtrusionGeometry, StationaryExtrusion, Retraction, Unretraction,
+    Printer,
+    Fan, Hotend, Buildplate,
+    PrinterCommand, ManualGcode, GcodeComment,
+    GcodeControls, PlotControls,
+    PlotAnnotation
+  ].forEach(add)
+  return reg
 }

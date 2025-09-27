@@ -12,11 +12,15 @@ import { fileURLToPath } from 'node:url'
 // Resolve project root robustly across platforms (Windows file URL starts with /C:/)
 const scriptDir = fileURLToPath(new URL('.', import.meta.url))
 const root = path.resolve(scriptDir, '..')
-const dist = path.join(root, 'dist', 'index.js')
-if (!fs.existsSync(dist)) {
-  console.error(`Build output missing. (Checked: ${dist}) Run: npm run build`)
+const distPath = path.join(root, 'dist', 'index.js')
+if (!fs.existsSync(distPath)) {
+  console.error(`Build output missing. (Checked: ${distPath}) Run: npm run build`)
   process.exit(1)
 }
+// Build a file URL that works cross-platform
+const dist = process.platform === 'win32'
+  ? new URL('file:///' + distPath.replace(/\\/g, '/')).href
+  : new URL('file://' + distPath).href
 
 // Example definitions: a function in Python and equivalent JS steps builder
 // We embed small Python scripts executed via -c for isolation.
@@ -70,15 +74,31 @@ function detectPython() {
 }
 
 const PYTHON_CMD = detectPython()
-if (!PYTHON_CMD) {
-  console.error('No Python interpreter found (tried python, python3, py). Install Python or adjust PATH.')
-  process.exit(2)
+const NO_PYTHON = !PYTHON_CMD
+if (NO_PYTHON) {
+  console.warn('No Python interpreter found (tried python, python3, py). Skipping Python side comparisons.')
 }
 
 function runPython(code) {
-  const r = spawnSync(PYTHON_CMD, ['-c', code], { encoding: 'utf-8' })
+  if (NO_PYTHON) return ''
+  // First attempt: direct python assuming fullcontrol installed
+  let r = spawnSync(PYTHON_CMD, ['-c', `import fullcontrol;${code}`], { encoding: 'utf-8' })
+  if (r.status === 0) return r.stdout.trim()
+  const stderr = r.stderr || ''
+  const missing = /ModuleNotFoundError: No module named 'fullcontrol'/.test(stderr) || /ImportError/.test(stderr)
+  if (!missing) {
+    // Some other error unrelated to missing module
+    throw new Error('Python failed: '+stderr)
+  }
+  // Fallback: try uv (if available) to run with fullcontrol installed ad-hoc
+  const uvCheck = spawnSync('uv', ['--version'], { encoding: 'utf-8' })
+  if (uvCheck.status !== 0) {
+    throw new Error("Python missing fullcontrol and 'uv' not available to install it dynamically")
+  }
+  // Use uv run --with fullcontrol -c "code"
+  r = spawnSync('uv', ['run', '--with', 'fullcontrol', '-c', code], { encoding: 'utf-8' })
   if (r.error) throw r.error
-  if (r.status !== 0) throw new Error('Python failed: '+r.stderr)
+  if (r.status !== 0) throw new Error('uv run failed: '+r.stderr)
   return r.stdout.trim()
 }
 
@@ -105,6 +125,10 @@ function diffLines(aStr, bStr) {
     try {
       const pyOut = runPython(c.py)
       const jsOut = await runJs(c.js)
+      if (NO_PYTHON) {
+        console.log('SKIPPED (js only)')
+        continue
+      }
       if (pyOut === jsOut) {
         console.log('OK')
       } else {
@@ -123,5 +147,6 @@ function diffLines(aStr, bStr) {
     }
   }
   if (failures) { console.error(`\n${failures} case(s) failed`); process.exit(1) }
+  else if (NO_PYTHON) console.log('\nCompleted JS-only run (install Python to enable diff).')
   else console.log('\nAll comparison cases matched.')
 })()

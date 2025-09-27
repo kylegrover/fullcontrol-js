@@ -23,7 +23,10 @@
     "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
     "lint": "eslint 'src/**/*.ts' || true",
     "typecheck": "tsc --noEmit",
-    "compare": "node ./scripts/compare.py_js_gcode.mjs",
+  "compare": "node ./scripts/compare.py_js_gcode.mjs",
+  "generate:js": "node ./scripts/generate_js_gcode.mjs",
+  "generate:py": "python ./scripts/generate_py_gcode.py",
+  "compare:split": "bash ./scripts/compare.sh",
     "prepack": "npm run build && npm run typecheck"
   },
   "files": [

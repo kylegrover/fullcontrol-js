@@ -22,6 +22,7 @@ export * from './geometry/arcs.js'
 export * from './geometry/ramping.js'
 export * from './geometry/shapes.js'
 export * from './geometry/waves.js'
+export * from './geometry/travel_to.js'
 
 // pipeline / transform
 export * from './pipeline/state.js'

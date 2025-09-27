@@ -31,16 +31,28 @@ export function generate_gcode(state: State) {
       state.addPoint(step)
       if (!prevPoint) {
         // Emit initial positioning move if coordinates present
-        let line = 'G0'
+        let line = (currentExtruder?.on || (step as any).extrude) ? 'G1' : 'G0'
         if (step.x != null) line += ` X${fmt(step.x,3)}`
         if (step.y != null) line += ` Y${fmt(step.y,3)}`
         if (step.z != null) line += ` Z${fmt(step.z,3)}`
+        // feedrate if first move and speed set
+        if (state.printer) {
+          if (step.speed != null) {
+            if (currentExtruder?.on) state.printer.print_speed = step.speed; else state.printer.travel_speed = step.speed
+            state.printer.speed_changed = true
+          }
+          const fSnippet = state.printer.f_gcode(!!currentExtruder?.on)
+            .trim()
+          if (fSnippet) line += ' ' + fSnippet
+          state.printer.speed_changed = false
+        }
         state.addGcode(line)
         lastLine = line
       } else {
         const moveDist = distance(prevPoint, step)
-        const isExtrude = !!step.extrude && geometry?.area && currentExtruder
-        let line = isExtrude ? 'G1' : 'G0'
+        const extrudingFlag = currentExtruder?.on || (step as any).extrude
+        const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
+        let line = extrudingFlag ? 'G1' : 'G0'
         if (step.x != null) line += ` X${fmt(step.x,3)}`
         if (step.y != null) line += ` Y${fmt(step.y,3)}`
         if (step.z != null) line += ` Z${fmt(step.z,3)}`
@@ -56,13 +68,12 @@ export function generate_gcode(state: State) {
         if (state.printer) {
           // mark speed_changed for this move if point speed differs
           if (step.speed != null) {
-            // heuristically decide extruding vs travel for feedrate
-            const extruding = !!step.extrude
+            const extruding = !!extrudingFlag
             if (extruding) state.printer.print_speed = step.speed
             else state.printer.travel_speed = step.speed
             state.printer.speed_changed = true
           }
-          const fSnippet = state.printer.f_gcode(!!step.extrude)
+          const fSnippet = state.printer.f_gcode(!!extrudingFlag)
           if (fSnippet.trim()) line += ' ' + fSnippet.trim()
           state.printer.speed_changed = false
         }
@@ -78,16 +89,26 @@ export function generate_gcode(state: State) {
         // recurse logic by pushing back into loop? Simpler: duplicate block
         state.addPoint(p)
         if (!prevPoint) {
-          let line = 'G0'
+          let line = (currentExtruder?.on || (p as any).extrude) ? 'G1' : 'G0'
           if (p.x != null) line += ` X${fmt(p.x,3)}`
           if (p.y != null) line += ` Y${fmt(p.y,3)}`
           if (p.z != null) line += ` Z${fmt(p.z,3)}`
+          if (state.printer) {
+            if (p.speed != null) {
+              if (currentExtruder?.on) state.printer.print_speed = p.speed; else state.printer.travel_speed = p.speed
+              state.printer.speed_changed = true
+            }
+            const fSnippet = state.printer.f_gcode(!!currentExtruder?.on).trim()
+            if (fSnippet) line += ' ' + fSnippet
+            state.printer.speed_changed = false
+          }
           state.addGcode(line)
           lastLine = line
         } else {
           const moveDist = distance(prevPoint, p)
-          const isExtrude = !!p.extrude && geometry?.area && currentExtruder
-          let line = isExtrude ? 'G1' : 'G0'
+          const extrudingFlag = currentExtruder?.on || (p as any).extrude
+          const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
+          let line = extrudingFlag ? 'G1' : 'G0'
           if (p.x != null) line += ` X${fmt(p.x,3)}`
           if (p.y != null) line += ` Y${fmt(p.y,3)}`
           if (p.z != null) line += ` Z${fmt(p.z,3)}`
@@ -101,12 +122,12 @@ export function generate_gcode(state: State) {
           }
           if (state.printer) {
             if (p.speed != null) {
-              const extruding = !!p.extrude
+              const extruding = !!extrudingFlag
               if (extruding) state.printer.print_speed = p.speed
               else state.printer.travel_speed = p.speed
               state.printer.speed_changed = true
             }
-            const fSnippet = state.printer.f_gcode(!!p.extrude)
+            const fSnippet = state.printer.f_gcode(!!extrudingFlag)
             if (fSnippet.trim()) line += ' ' + fSnippet.trim()
             state.printer.speed_changed = false
           }
@@ -139,8 +160,30 @@ export function generate_gcode(state: State) {
       continue
     }
     // Printer / Extruder registration
-    if (step instanceof Printer) { state.printer = step; gstate.printer = step; continue }
-    if (step instanceof Extruder) { state.extruders.push(step); if (!currentExtruder) currentExtruder = step; continue }
+    if (step instanceof Printer) { 
+      // merge new_command semantics
+      if (state.printer && step.new_command) {
+        state.printer.command_list = { ...(state.printer.command_list||{}), ...(step.new_command||{}) }
+      } else {
+        state.printer = step; gstate.printer = step
+      }
+      continue 
+    }
+    if (step instanceof Extruder) { 
+      // update current extruder values (toggle on/off)
+      if (!currentExtruder) {
+        currentExtruder = step
+        state.extruders.push(step)
+      } else {
+        // if this instance only sets 'on' or mode flags, update existing
+        if (step.on != null) currentExtruder.on = step.on
+        if (step.units != null) currentExtruder.units = step.units
+        if (step.dia_feed != null) currentExtruder.dia_feed = step.dia_feed
+        if (step.relative_gcode != null) currentExtruder.relative_gcode = step.relative_gcode
+        if (step.travel_format != null) currentExtruder.travel_format = step.travel_format
+      }
+      continue 
+    }
     if (step instanceof Retraction) {
       if (!currentExtruder) continue
       currentExtruder.update_e_ratio()

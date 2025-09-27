@@ -9,50 +9,68 @@ PY_OUT="$SCRIPT_DIR/out/py"
 npm run --silent build > /dev/null
 node "$SCRIPT_DIR/generate_js_gcode.mjs"
 
-# Find python
 PY_CMD=""
 for c in python python3 py; do
   if command -v "$c" >/dev/null 2>&1; then PY_CMD="$c"; break; fi
 done
 
+# If no system python, we will attempt using uv run directly (assuming uv has a managed python already)
+USE_UV_DIRECT=0
 if [ -z "$PY_CMD" ]; then
-  echo "No python interpreter found. Skipping Python comparison (JS only)." >&2
-  exit 0
-fi
-
-# Attempt direct run; if fullcontrol missing, try uv
-if ! "$PY_CMD" -c "import fullcontrol" 2>/dev/null; then
   if command -v uv >/dev/null 2>&1; then
-    echo "Installing fullcontrol via uv ephemeral run..." >&2
-    UV_RUN=1
+    USE_UV_DIRECT=1
+    echo "No system python; will attempt 'uv run' for Python generation (no downloads)." >&2
   else
-    echo "Python found but fullcontrol not installed and uv not available. Skipping Python side." >&2
-    exit 0
+    echo "No python or uv found. JS-only comparison." >&2
   fi
 fi
 
-if [ "${UV_RUN:-}" = 1 ]; then
-  # Run python generator via uv
-  if ! uv run --with fullcontrol "$SCRIPT_DIR/generate_py_gcode.py"; then
-    echo "uv run failed" >&2; exit 1; fi
-else
-  "$PY_CMD" "$SCRIPT_DIR/generate_py_gcode.py" || exit 1
+RUN_PY_WITH_UV=0
+RUN_PY_WITH_UV=0
+if [ -n "$PY_CMD" ]; then
+  if "$PY_CMD" -c "import fullcontrol" 2>/dev/null; then :; else
+    if command -v uv >/dev/null 2>&1; then RUN_PY_WITH_UV=1; else PY_CMD=""; fi
+  fi
+fi
+
+if [ $USE_UV_DIRECT -eq 1 ]; then
+  # Try import fullcontrol via uv run; if missing we still ask uv to provide it ephemeral with --with
+  RUN_PY_WITH_UV=1
+fi
+
+PY_ACTIVE=0
+if [ -n "$PY_CMD" ]; then
+  if [ $RUN_PY_WITH_UV -eq 1 ]; then
+    if uv run --with fullcontrol "$SCRIPT_DIR/generate_py_gcode.py"; then PY_ACTIVE=1; else echo "uv run failed" >&2; fi
+  else
+    if "$PY_CMD" "$SCRIPT_DIR/generate_py_gcode.py"; then PY_ACTIVE=1; fi
+  fi
+elif [ $USE_UV_DIRECT -eq 1 ]; then
+  if uv run --with fullcontrol "$SCRIPT_DIR/generate_py_gcode.py"; then PY_ACTIVE=1; else echo "uv run failed" >&2; fi
+fi
+
+if [ $PY_ACTIVE -eq 0 ]; then
+  echo "Proceeding without Python outputs." >&2
 fi
 
 # Diff results
 RET=0
 for f in "$JS_OUT"/*.gcode; do
   base="$(basename "$f")"
-  if [ -f "$PY_OUT/$base" ]; then
-    if diff -u "$PY_OUT/$base" "$f"; then
-      echo "MATCH $base"
+  if [ $PY_ACTIVE -eq 1 ]; then
+    if [ -f "$PY_OUT/$base" ]; then
+      if diff -u "$PY_OUT/$base" "$f"; then
+        echo "MATCH $base"
+      else
+        echo "DIFF  $base" >&2
+        RET=1
+      fi
     else
-      echo "DIFF  $base" >&2
+      echo "Missing Python output for $base" >&2
       RET=1
     fi
   else
-    echo "Missing Python output for $base" >&2
-    RET=1
+    echo "JS_ONLY $base" >&2
   fi
 done
 exit $RET

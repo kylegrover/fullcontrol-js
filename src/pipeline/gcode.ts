@@ -23,6 +23,7 @@ export function generate_gcode(state: State) {
   for (const s of state.steps) if (s instanceof ExtrusionGeometry) { geometry = s; geometry.update_area(); break }
   for (const step of state.steps) {
     if (!step) continue
+    // Handle Extruder mode / attribute change lines before point moves when encountering an Extruder instance.
     // Points
     // Geometry switch
     if (step instanceof ExtrusionGeometry) { geometry = step; geometry.update_area(); continue }
@@ -170,19 +171,35 @@ export function generate_gcode(state: State) {
       continue 
     }
     if (step instanceof Extruder) { 
-      // update current extruder values (toggle on/off)
       if (!currentExtruder) {
         currentExtruder = step
+        if (currentExtruder.total_volume == null) currentExtruder.total_volume = 0
+        if (currentExtruder.total_volume_ref == null) currentExtruder.total_volume_ref = 0
         state.extruders.push(step)
+        // initial relative/absolute mode emission
+        if (currentExtruder.relative_gcode != null) {
+          state.addGcode(currentExtruder.relative_gcode ? 'M83 ; relative extrusion' : 'M82 ; absolute extrusion')
+          if (!currentExtruder.relative_gcode) state.addGcode('G92 E0 ; reset extrusion position to zero')
+        }
       } else {
-        // if this instance only sets 'on' or mode flags, update existing
+        // detect relative mode change
+        const prevRel = currentExtruder.relative_gcode
+        if (step.relative_gcode != null && step.relative_gcode !== prevRel) {
+          currentExtruder.relative_gcode = step.relative_gcode
+          // reset reference on mode switch
+          currentExtruder.total_volume_ref = currentExtruder.total_volume || 0
+          state.addGcode(currentExtruder.relative_gcode ? 'M83 ; relative extrusion' : 'M82 ; absolute extrusion')
+          if (!currentExtruder.relative_gcode) state.addGcode('G92 E0 ; reset extrusion position to zero')
+        }
         if (step.on != null) currentExtruder.on = step.on
-        if (step.units != null) currentExtruder.units = step.units
-        if (step.dia_feed != null) currentExtruder.dia_feed = step.dia_feed
-        if (step.relative_gcode != null) currentExtruder.relative_gcode = step.relative_gcode
+        if (step.units != null || step.dia_feed != null) {
+          if (step.units != null) currentExtruder.units = step.units
+          if (step.dia_feed != null) currentExtruder.dia_feed = step.dia_feed
+          currentExtruder.update_e_ratio()
+        }
         if (step.travel_format != null) currentExtruder.travel_format = step.travel_format
       }
-      continue 
+      continue
     }
     if (step instanceof Retraction) {
       if (!currentExtruder) continue

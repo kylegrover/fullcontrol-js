@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "description": "FullControl TypeScript rewrite - API parity mirror of Python library (G-code generation & geometry)",
   "license": "GPL-3.0",
-  "pythonParity": "0.0.0",
+  "pythonParity": "v0.1.2-2-gd818d78 (commit d818d78adac6c0d565f50ac1ea364a3e63ecb4b9)",
   "type": "module",
   "sideEffects": false,
   "exports": {

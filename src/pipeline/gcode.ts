@@ -24,16 +24,32 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
   const gstate: GcodeStateLike = { printer: state.printer || new Printer(), gcode: state.gcodeLines }
   let currentExtruder: Extruder | undefined = state.extruders[0]
   let geometry: ExtrusionGeometry | undefined
-  const showBanner = !controls?.silent && controls?.show_banner !== false
-  const showTips = !controls?.silent && controls?.show_tips !== false
+  const silent = !!controls?.silent
+  const showBanner = !silent && controls?.show_banner !== false
+  const showTips = !silent && controls?.show_tips !== false
   if (showBanner) {
-    state.addGcode('; Time to print!!!!!')
-    state.addGcode('; GCode created with FullControl (JS) - tell us what you\'re printing!')
-    state.addGcode('; info@fullcontrol.xyz or tag FullControlXYZ on socials')
+    // Banner should be stdout only for parity with Python (ManualGcode provides content when printer start sequence runs)
+    console.log(`; Time to print!!!!!\n; GCode created with FullControl - tell us what you're printing!\n; info@fullcontrol.xyz or tag FullControlXYZ on Twitter/Instagram/LinkedIn/Reddit/TikTok`)
   }
   if (showTips) {
-    state.addGcode('; tips: enable/disable with GcodeControls.show_tips=false')
-    if (!state.printer) state.addGcode('; tip: set a Printer() early to ensure start gcode is included')
+    // Mirror Python tips style: only print if potential issues
+    let tipStr = ''
+    if (!state.printer) {
+      // Python prints a printer warning during controls.initialize; emulate minimal guidance here
+      tipStr += "warning: printer is not set - defaulting may omit start gcode. Set controls.printer_name or add a Printer() instance.\n"
+    }
+    const firstExtruder = state.extruders[0]
+    if (firstExtruder && firstExtruder.units === 'mm3' && (firstExtruder.dia_feed == null)) {
+      tipStr += "tip: set Extruder.dia_feed for mm^3 extrusion (filament or syringe diameter)\n"
+    }
+    if (!geometry) {
+      tipStr += "tip: set initial extrusion_width and extrusion_height (ExtrusionGeometry) for correct volumetric extrusion\n"
+    } else if ((geometry as any).area == null) {
+      tipStr += "tip: geometry area not computed; ensure width & height or explicit area are set\n"
+    }
+    if (tipStr) {
+      console.log('fc.transform guidance tips (hide with show_tips=false)\n' + tipStr.trimEnd())
+    }
   }
   // Attempt to locate first geometry object among steps if present
   for (const s of state.steps) if (s instanceof ExtrusionGeometry) { geometry = s; geometry.update_area(); break }
@@ -47,54 +63,73 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
     if (step instanceof Point) {
       state.addPoint(step)
       if (!prevPoint) {
-        // Emit initial positioning move if coordinates present
-        let line = (currentExtruder?.on || (step as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-        if (step.x != null) line += ` X${fmtCoord(step.x)}`
-        if (step.y != null) line += ` Y${fmtCoord(step.y)}`
-        if (step.z != null) line += ` Z${fmtCoord(step.z)}`
-        if (!(currentExtruder?.on || (step as any).extrude) && currentExtruder?.travel_format === 'G1_E0') line += ' E0'
-        // feedrate if first move and speed set
+        // Initial positioning move: ordering G + F(if changed) + XYZ + E (Python parity)
+        let g = (currentExtruder?.on || (step as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
+        let f = ''
         if (state.printer) {
           if (step.speed != null) {
             if (currentExtruder?.on) state.printer.print_speed = step.speed; else state.printer.travel_speed = step.speed
             state.printer.speed_changed = true
+          } else {
+            // first move should emit F once if speeds exist
+            state.printer.speed_changed = true
           }
-          const fSnippet = state.printer.f_gcode(!!currentExtruder?.on)
-            .trim()
-          if (fSnippet) line += ' ' + fSnippet
+          f = state.printer.f_gcode(!!currentExtruder?.on)
           state.printer.speed_changed = false
         }
+        let xyz = ''
+        if (step.x != null) xyz += `X${fmtCoord(step.x)} `
+        if (step.y != null) xyz += `Y${fmtCoord(step.y)} `
+        if (step.z != null) xyz += `Z${fmtCoord(step.z)} `
+        xyz = xyz.trimEnd()
+        let e = ''
+        if (!(currentExtruder?.on || (step as any).extrude) && currentExtruder?.travel_format === 'G1_E0') e = 'E0'
+        const parts = [g]
+        if (f.trim()) parts.push(f.trim())
+        if (xyz) parts.push(xyz)
+        if (e) parts.push(e)
+        const line = parts.join(' ')
         state.addGcode(line)
         lastLine = line
       } else {
         const moveDist = distance(prevPoint, step)
         const extrudingFlag = currentExtruder?.on || (step as any).extrude
         const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
-        let line = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-        if (step.x != null) line += ` X${fmtCoord(step.x)}`
-        if (step.y != null) line += ` Y${fmtCoord(step.y)}`
-        if (step.z != null) line += ` Z${fmtCoord(step.z)}`
-        if (isExtrude) {
-          currentExtruder.update_e_ratio()
-          const volume = moveDist * geometry!.area!
-          const eVol = currentExtruder.get_and_update_volume(volume) * (currentExtruder.volume_to_e || 1)
-          line += ` E${fmtExtrude(eVol)}`
-        } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
-          line += ' E0'
-        }
-        // feedrate: per-move override or printer speed change
+        const g = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
+        // feedrate first if changed
+        let f = ''
         if (state.printer) {
-          // mark speed_changed for this move if point speed differs
           if (step.speed != null) {
             const extruding = !!extrudingFlag
-            if (extruding) state.printer.print_speed = step.speed
-            else state.printer.travel_speed = step.speed
+            if (extruding) {
+              state.printer.print_speed = step.speed
+            } else {
+              state.printer.travel_speed = step.speed
+            }
             state.printer.speed_changed = true
           }
-          const fSnippet = state.printer.f_gcode(!!extrudingFlag)
-          if (fSnippet.trim()) line += ' ' + fSnippet.trim()
+          f = state.printer.f_gcode(!!extrudingFlag)
           state.printer.speed_changed = false
         }
+        let xyz = ''
+        if (step.x != null) xyz += `X${fmtCoord(step.x)} `
+        if (step.y != null) xyz += `Y${fmtCoord(step.y)} `
+        if (step.z != null) xyz += `Z${fmtCoord(step.z)} `
+        xyz = xyz.trimEnd()
+        let e = ''
+        if (isExtrude) {
+          currentExtruder.update_e_ratio()
+            const volume = moveDist * geometry!.area!
+            const eVol = currentExtruder.get_and_update_volume(volume) * (currentExtruder.volume_to_e || 1)
+            e = `E${fmtExtrude(eVol)}`
+        } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
+          e = 'E0'
+        }
+        const parts = [g]
+        if (f.trim()) parts.push(f.trim())
+        if (xyz) parts.push(xyz)
+        if (e) parts.push(e)
+        const line = parts.join(' ')
         state.addGcode(line)
         lastLine = line
       }
@@ -107,49 +142,70 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
         // recurse logic by pushing back into loop? Simpler: duplicate block
         state.addPoint(p)
         if (!prevPoint) {
-          let line = (currentExtruder?.on || (p as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-          if (p.x != null) line += ` X${fmtCoord(p.x)}`
-          if (p.y != null) line += ` Y${fmtCoord(p.y)}`
-          if (p.z != null) line += ` Z${fmtCoord(p.z)}`
-          if (!(currentExtruder?.on || (p as any).extrude) && currentExtruder?.travel_format === 'G1_E0') line += ' E0'
+          let g = (currentExtruder?.on || (p as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
+          let f = ''
           if (state.printer) {
             if (p.speed != null) {
               if (currentExtruder?.on) state.printer.print_speed = p.speed; else state.printer.travel_speed = p.speed
               state.printer.speed_changed = true
+            } else {
+              state.printer.speed_changed = true
             }
-            const fSnippet = state.printer.f_gcode(!!currentExtruder?.on).trim()
-            if (fSnippet) line += ' ' + fSnippet
+            f = state.printer.f_gcode(!!currentExtruder?.on)
             state.printer.speed_changed = false
           }
+          let xyz = ''
+          if (p.x != null) xyz += `X${fmtCoord(p.x)} `
+          if (p.y != null) xyz += `Y${fmtCoord(p.y)} `
+          if (p.z != null) xyz += `Z${fmtCoord(p.z)} `
+          xyz = xyz.trimEnd()
+          let e = ''
+          if (!(currentExtruder?.on || (p as any).extrude) && currentExtruder?.travel_format === 'G1_E0') e = 'E0'
+          const parts = [g]
+          if (f.trim()) parts.push(f.trim())
+          if (xyz) parts.push(xyz)
+          if (e) parts.push(e)
+          const line = parts.join(' ')
           state.addGcode(line)
           lastLine = line
         } else {
           const moveDist = distance(prevPoint, p)
           const extrudingFlag = currentExtruder?.on || (p as any).extrude
           const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
-          let line = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-          if (p.x != null) line += ` X${fmtCoord(p.x)}`
-          if (p.y != null) line += ` Y${fmtCoord(p.y)}`
-          if (p.z != null) line += ` Z${fmtCoord(p.z)}`
+          const g = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
+          let f = ''
+          if (state.printer) {
+            if (p.speed != null) {
+              const extruding = !!extrudingFlag
+              if (extruding) {
+                state.printer.print_speed = p.speed
+              } else {
+                state.printer.travel_speed = p.speed
+              }
+              state.printer.speed_changed = true
+            }
+            f = state.printer.f_gcode(!!extrudingFlag)
+            state.printer.speed_changed = false
+          }
+          let xyz = ''
+          if (p.x != null) xyz += `X${fmtCoord(p.x)} `
+          if (p.y != null) xyz += `Y${fmtCoord(p.y)} `
+          if (p.z != null) xyz += `Z${fmtCoord(p.z)} `
+          xyz = xyz.trimEnd()
+          let e = ''
           if (isExtrude) {
             currentExtruder!.update_e_ratio()
             const volume = moveDist * geometry!.area!
             const eVol = currentExtruder!.get_and_update_volume(volume) * (currentExtruder!.volume_to_e || 1)
-            line += ` E${fmtExtrude(eVol)}`
+            e = `E${fmtExtrude(eVol)}`
           } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
-            line += ' E0'
+            e = 'E0'
           }
-          if (state.printer) {
-            if (p.speed != null) {
-              const extruding = !!extrudingFlag
-              if (extruding) state.printer.print_speed = p.speed
-              else state.printer.travel_speed = p.speed
-              state.printer.speed_changed = true
-            }
-            const fSnippet = state.printer.f_gcode(!!extrudingFlag)
-            if (fSnippet.trim()) line += ' ' + fSnippet.trim()
-            state.printer.speed_changed = false
-          }
+          const parts = [g]
+          if (f.trim()) parts.push(f.trim())
+          if (xyz) parts.push(xyz)
+          if (e) parts.push(e)
+          const line = parts.join(' ')
           state.addGcode(line)
           lastLine = line
         }
@@ -262,15 +318,22 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
       if (!currentExtruder) continue
       currentExtruder.update_e_ratio()
       const eVol = currentExtruder.get_and_update_volume(step.volume) * (currentExtruder.volume_to_e || 1)
-      let line = 'G1'
-      line += ` E${fmtExtrude(eVol)}`
-      if (step.speed != null && state.printer) {
-        state.printer.print_speed = step.speed
-        state.printer.speed_changed = true
-        const fSnippet = state.printer.f_gcode(true)
-        if (fSnippet.trim()) line += ' ' + fSnippet.trim()
+      // Python ordering: G1 F... E...
+      let f = ''
+      if (state.printer) {
+        if (step.speed != null) {
+          state.printer.print_speed = step.speed
+          state.printer.speed_changed = true
+        } else {
+          state.printer.speed_changed = true
+        }
+        f = state.printer.f_gcode(true)
         state.printer.speed_changed = false
       }
+      const parts = ['G1']
+      if (f.trim()) parts.push(f.trim())
+      parts.push(`E${fmtExtrude(eVol)}`)
+      const line = parts.join(' ')
       state.addGcode(line)
       lastLine = line
       continue

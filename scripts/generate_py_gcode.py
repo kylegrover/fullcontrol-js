@@ -6,6 +6,8 @@ If fullcontrol is not installed, attempts to run via uv on the fly (handled exte
 import os, sys, textwrap, json, importlib
 from pathlib import Path
 
+SILENT = '--silent' in sys.argv
+
 CASES = {
   'basic_line': textwrap.dedent('''
 from fullcontrol import Point, Printer, Extruder, ExtrusionGeometry, transform
@@ -29,7 +31,7 @@ print(transform(seq, result_type='gcode'))
 '''),
 }
 
-out_dir = Path(__file__).parent / 'out' / 'py'
+out_dir = Path(__file__).parent / 'out' / ('py_silent' if SILENT else 'py')
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # Quick check for fullcontrol availability
@@ -44,16 +46,25 @@ import contextlib
 
 failures = 0
 for name, code in CASES.items():
-  try:
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-      exec(code, {})
-    g = buf.getvalue().strip() + '\n'
-    (out_dir / f'{name}.gcode').write_text(g, encoding='utf-8')
-    print('PY case', name, 'OK')
-  except Exception as ex:
-    print('PY case', name, 'ERROR', ex, file=sys.stderr)
-    failures += 1
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            exec(code, {})
+        g_raw = buf.getvalue().strip() + '\n'
+        if SILENT:
+            filtered = []
+            for ln in g_raw.splitlines():
+                if ln.startswith('; Time to print') or ln.startswith('; tips') or ln.startswith('; tip:'):
+                    continue
+                filtered.append(ln)
+            g = '\n'.join(filtered).strip() + '\n'
+        else:
+            g = g_raw
+        (out_dir / f'{name}.gcode').write_text(g, encoding='utf-8')
+        print('PY case', name, 'OK')
+    except Exception as ex:
+        print('PY case', name, 'ERROR', ex, file=sys.stderr)
+        failures += 1
 
 if failures:
     sys.exit(1)

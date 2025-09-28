@@ -8,7 +8,7 @@ export interface TransformResult { gcode: string; plot: ReturnType<typeof build_
 
 export function transform(steps: any[], result_type: 'gcode' | 'plot' = 'gcode', controls: Partial<GcodeControls> = {}): TransformResult {
   const fixed = fix(steps, result_type, controls) as any
-  const state = new State(fixed as any[])
+  const state = new State(fixed as any[], { initialization_data: (controls as any).initialization_data })
   // attach controls so gcode layer can use banner/tips flags
   ;(state as any).controls = controls
   for (const s of state.steps) state.register(s)

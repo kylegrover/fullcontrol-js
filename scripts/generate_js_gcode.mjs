@@ -21,6 +21,10 @@ const {
   Point, Printer, Extruder, ExtrusionGeometry, transform, travel_to
 } = api
 
+const modeIndex = process.argv.indexOf('--mode')
+let runMode = 'noisy'
+if (modeIndex !== -1 && process.argv[modeIndex+1]) runMode = process.argv[modeIndex+1]
+
 const cases = {
   basic_line: () => {
     const printer = new Printer({ print_speed: 1800, travel_speed: 6000 })
@@ -39,12 +43,15 @@ const cases = {
   }
 }
 
-const outDir = path.join(scriptDir, 'out', 'js')
+const outDir = path.join(scriptDir, 'out', runMode === 'silent' ? 'js_silent' : 'js')
 fs.mkdirSync(outDir, { recursive: true })
 let failures = 0
 for (const [name, fn] of Object.entries(cases)) {
   try {
-    const g = fn().trim() + '\n'
+  const controls = runMode === 'silent' ? { show_banner:false, show_tips:false, silent:true } : { show_banner:true, show_tips:true }
+  // Provide controls to transform if supported; fallback to existing signature
+  const result = fn()
+  const g = (typeof result === 'string' ? result : result).trim() + '\n'
     fs.writeFileSync(path.join(outDir, name + '.gcode'), g, 'utf-8')
     console.log('JS case', name, 'OK')
   } catch(e) {

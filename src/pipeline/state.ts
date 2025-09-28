@@ -2,6 +2,9 @@ import { Point } from '../models/point.js'
 import { Extruder } from '../models/extrusion.js'
 import { Printer } from '../models/printer.js'
 import { flatten } from '../util/extra.js'
+import { buildPrimer, PrimerName } from '../gcode/primer/index.js'
+import { ManualGcode } from '../models/commands.js'
+import { default_initial_settings } from '../devices/community/singletool/base_settings.js'
 
 export interface StepContext {
   prevPoint?: Point
@@ -19,7 +22,29 @@ export class State {
   printer?: Printer
   annotations: any[] = []
 
-  constructor(steps: Step[] = []) { this.steps = flatten(steps) }
+  constructor(steps: Step[] = [], options?: { initialization_data?: any }) {
+    // Flatten user steps first
+    const flat = flatten(steps)
+    const initData = { ...default_initial_settings, ...(options?.initialization_data || {}) }
+    // capture starting / ending procedure if provided (like Python passes via import_printer)
+    const starting: any[] = initData.starting_procedure_steps || []
+    const ending: any[] = initData.ending_procedure_steps || []
+    // Determine primer name and target first point of user geometry
+    const primerName: PrimerName = initData.primer || 'no_primer'
+    let firstPoint: Point | undefined = undefined
+    for (const s of flat) {
+      if (s instanceof Point) { firstPoint = s; break }
+      if (Array.isArray(s)) {
+        const p = s.find(x => x instanceof Point)
+        if (p) { firstPoint = p; break }
+      }
+    }
+    let primerSteps: any[] = []
+    if (firstPoint && primerName && primerName !== 'no_primer') {
+      primerSteps = buildPrimer(primerName, firstPoint)
+    }
+    this.steps = [...starting, ...primerSteps, ...flat, ...ending]
+  }
 
   addPoint(p: Point) {
     this.points.push(p)

@@ -7,7 +7,8 @@ function clonePoint(p: Point) { return new Point({ x: p.x, y: p.y, z: p.z, extru
 
 export type PrimerName = 'travel' | 'front_lines_then_y' | 'front_lines_then_x' | 'front_lines_then_xy' | 'x' | 'y' | 'no_primer'
 
-export function buildPrimer(name: PrimerName, endPoint: Point): any[] {
+export function buildPrimer(name: PrimerName, endPoint: Point, options?: { enablePrimer?: boolean }): any[] {
+  if (!options?.enablePrimer || name === 'no_primer') return []
   switch (name) {
     case 'travel':
       return [ new Extruder({ on:false }), clonePoint(endPoint), new Extruder({ on:true }) ]
@@ -21,7 +22,6 @@ export function buildPrimer(name: PrimerName, endPoint: Point): any[] {
       return axisPrime('x', endPoint)
     case 'y':
       return axisPrime('y', endPoint)
-    case 'no_primer':
     default:
       return []
   }

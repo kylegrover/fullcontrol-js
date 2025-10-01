@@ -1,5 +1,7 @@
 # Parity Matrix
 
+> Deprecated location: This file will be consolidated. The authoritative, regularly updated parity overview now lives at the repository root in `PARITY.md` and the executable parity validation lives under `parity/`. Please update any docs or links accordingly.
+
 Tracks status of JS implementation relative to Python reference.
 
 | Area | Python Module(s) | JS Module(s) | Status | Notes |

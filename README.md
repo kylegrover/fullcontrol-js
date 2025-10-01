@@ -6,6 +6,25 @@ Runtime Support: Node 16+ (ES2020 output) and modern evergreen browsers.
 
 > Parity: `pythonParity` in `package.json` indicates the Python version matched (currently 0.0.0 placeholder for first publish). Patch releases may fix JS-specific issues without adding new Python features.
 
+## Parity Harness
+Python remains the source of truth. This repository includes an automated parity harness that runs paired real scripts (one Python, one JS) and performs tolerant G-code diffs.
+
+Run all scenarios:
+```
+npm run parity
+```
+
+Add a new scenario:
+1. Create `parity/scenarios/py/<name>.py` that prints G-code.
+2. Create `parity/scenarios/js/<name>.mjs` that writes the JS-generated G-code.
+3. Re-run `npm run parity` and ensure no semantic diffs.
+
+Semantic vs formatting differences: numeric fields (X/Y/Z/E/F) are compared with small tolerances defined in `parity/config.json`. Formatting-only differences (spacing, ordering within tolerance) do not fail the run.
+
+See also:
+- `PARITY.md` – high-level feature parity matrix.
+- `parity/README.md` – harness implementation details & roadmap.
+
 ## Features
 - Mutable model objects (`Point`, `Extruder`, `Printer`, etc.)
 - Geometry helpers (polar, move, reflect, arcs, segmentation, shapes, waves…)

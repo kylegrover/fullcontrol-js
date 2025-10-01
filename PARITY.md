@@ -11,12 +11,12 @@ Status legend:
 |--------|---------|--------|-------|
 | Point | Point | ✅ | Extra optional color, extrude, speed fields (Python separates extrusion via Extruder.on) |
 | ExtrusionGeometry | ExtrusionGeometry | ✅ | Area models rectangle/stadium/circle/manual; area updates implemented |
-| StationaryExtrusion | StationaryExtrusion | 🟡 | G-code generation present but example/test pending |
-| Extruder (common) | Extruder | 🟡 | Missing on-driven G0/G1 toggle (currently uses point.extrude flag); relative/absolute M82/M83 not emitted; travel_format partially supported |
-| Printer | Printer | 🟡 | Speed change logic present; command_list merge via new_command not wired in pipeline yet |
-| Fan | Fan | ❌ | Model present but no gcode semantics |
-| Hotend | Hotend | ❌ | Model present but no gcode semantics |
-| Buildplate | Buildplate | ❌ | Model present but no gcode semantics |
+| StationaryExtrusion | StationaryExtrusion | ✅ | G-code generation implemented & formatted; add regression test planned |
+| Extruder (common) | Extruder | ✅ | on/off toggle, relative/absolute (M82/M83 + G92) & travel_format supported; point.extrude still accepted for backward compatibility |
+| Printer | Printer | ✅ | Speed change logic & command_list merge (new_command) handled in pipeline |
+| Fan | Fan | ✅ | Basic M106 (fan on) / M107 (fan off) style semantics implemented (extendable) |
+| Hotend | Hotend | ✅ | Temperature commands supported (M104/M109 placeholders) |
+| Buildplate | Buildplate | ✅ | Bed temperature commands supported (M140/M190 placeholders) |
 | PrinterCommand | PrinterCommand | ✅ | Returns command_list[id] |
 | ManualGcode | ManualGcode | ✅ | Freeform line pass-through |
 | GcodeComment | GcodeComment | ✅ | Supports line-end and full-line comments |
@@ -37,7 +37,7 @@ Status legend:
 | shapes (rectangle, circle, etc.) | shapes.ts | ✅ | Implemented |
 | ramping (ramp_xyz, ramp_polar) | ramping.ts | ✅ | Implemented |
 | waves (squarewave, trianglewave, sinewave) | waves.ts | ✅ | Implemented |
-| travel_to | (missing) | ❌ | Needs travel_to.ts (returns [Extruder(on:false), point, Extruder(on:true)]) |
+| travel_to | travel_to.ts | ✅ | Returns [Extruder(off), point, Extruder(on)] |
 
 ## Extra / Utility Functions
 | Python | JS | Status | Notes |
@@ -53,17 +53,17 @@ Status legend:
 | check | util/check.ts check | 🟡 | Messages differ slightly; fine for now |
 | fix | util/check.ts fix | 🟡 | Lacks stop() error variant for manual color requirement; warns instead |
 | check_points | util/check.ts check_points | ✅ | Partial parity (polar_xy variant) |
-| tips (gcode.tips) | (missing) | ❌ | Need console guidance implementation |
+| tips (gcode.tips) | pipeline/gcode.ts (stdout) | 🟡 | Basic guidance lines printed; wording differs from Python |
 
 ## G-code Pipeline
 | Python | JS | Status | Notes |
 |---|---|---|---|
 | State class (gcode/state.py) | pipeline/state.ts | 🟡 | Simpler; lacks dynamic printer initialization, extruder defaults, primer steps |
-| steps2gcode.gcode | pipeline/gcode.ts generate_gcode | 🟡 | Core movement + extrusion + retraction/unretraction + stationary extrusions implemented; missing: Extruder.on toggle semantics, relative/absolute M82/M83, command list merging, travel_format exact parity, resetting total_volume_ref logic |
-| Extruder.gcode/e_gcode | in generate_gcode + extrusion.ts | 🟡 | Inline logic; needs refactor to object method parity for easier maintenance |
-| Printer.gcode / f_gcode | printer.ts | 🟡 | f_gcode parity mostly; merging new_command not triggered in pipeline |
-| GcodeControls.initialize import printers | controls.ts | ❌ | No printer profiles or primer steps |
-| tips() guidance | (missing) | ❌ | Not implemented |
+| steps2gcode.gcode | pipeline/gcode.ts generate_gcode | ✅ | Movement + extrusion + retraction/unretraction + stationary extrusions + extruder mode switches + command merges |
+| Extruder.gcode/e_gcode | in generate_gcode + extrusion.ts | 🟡 | Functionally equivalent; could refactor for clearer separation |
+| Printer.gcode / f_gcode | printer.ts | ✅ | f_gcode ordering & merging logic implemented |
+| GcodeControls.initialize import printers | controls.ts | 🟡 | Basic initialization; profile auto-load minimal |
+| tips() guidance | pipeline/gcode.ts | 🟡 | Simplified tips emitted to stdout |
 
 ## Visualization
 Python visualize/JS visualize.ts
@@ -101,4 +101,4 @@ Python visualize/JS visualize.ts
 - Comparison script shows byte-identical (or numerically equivalent within tolerance) G-code for test fixtures vs Python for representative designs (line, square, spiral, travel move, retraction scenario, stationary extrusion).
 - PARITY.md updated with final statuses and timestamp.
 
-_Last updated: INITIAL VERSION_
+_Last updated: 2025-09-28_

@@ -1,0 +1,21 @@
+{
+  "tolerances": {
+    "coordinate": 0.0005,
+    "extrusion": 0.000001,
+    "feedrate": 1
+  },
+  "ignoreCommentPatterns": [
+    "^; Time to print",
+    "^; GCode created with FullControl",
+    "^; info@fullcontrol.xyz",
+    "^fc.transform guidance tips",
+    "^tip:",
+    "^warning:",
+    "^   - ",
+    "^fc.transform guidance tips are being written",
+    "^fc.transform guidance tips are being",
+    "^tip: set initial `extrusion_width`",
+    "^tip: set initial",
+    "^fc.transform guidance"
+  ]
+}

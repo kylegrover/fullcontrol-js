@@ -1,0 +1,270 @@
+{
+  "summary": [
+    {
+      "scenario": "basic_line",
+      "status": "FAIL",
+      "totalDiffs": 1,
+      "semanticDiffs": 1,
+      "diffs": [
+        {
+          "line": 2,
+          "type": "NUMERIC_DIFF",
+          "py": "G0 F8000 X0 Y0 Z0.2",
+          "js": "G0 F6000 X0 Y0 Z0.2",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "F",
+              "py": 8000,
+              "js": 6000,
+              "delta": 2000,
+              "tol": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "rectangle_perimeter",
+      "status": "FAIL",
+      "totalDiffs": 1,
+      "semanticDiffs": 1,
+      "diffs": [
+        {
+          "line": 2,
+          "type": "NUMERIC_DIFF",
+          "py": "G0 F8000 X0 Y0 Z0.2",
+          "js": "G0 F6000 X0 Y0 Z0.2",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "F",
+              "py": 8000,
+              "js": 6000,
+              "delta": 2000,
+              "tol": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "relative_two_segment",
+      "status": "FAIL",
+      "totalDiffs": 2,
+      "semanticDiffs": 2,
+      "diffs": [
+        {
+          "line": 2,
+          "type": "NUMERIC_DIFF",
+          "py": "G0 F8000 X0 Y0 Z0.2",
+          "js": "G0 F5000 X0 Y0 Z0.2",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "F",
+              "py": 8000,
+              "js": 5000,
+              "delta": 3000,
+              "tol": 1
+            }
+          ]
+        },
+        {
+          "line": 6,
+          "type": "NUMERIC_DIFF",
+          "py": "G1 F1500 X30 E0.779534",
+          "js": "G1 X30 E0.779534",
+          "numericIssues": [
+            {
+              "param": "F",
+              "reason": "missing",
+              "py": 1500
+            }
+          ],
+          "toleranceIssues": []
+        }
+      ]
+    },
+    {
+      "scenario": "retraction",
+      "status": "FAIL",
+      "totalDiffs": 5,
+      "semanticDiffs": 5,
+      "diffs": [
+        {
+          "line": 2,
+          "type": "NUMERIC_DIFF",
+          "py": "G0 F8000 X0 Y0 Z0.2",
+          "js": "G0 F6000 X0 Y0 Z0.2",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "F",
+              "py": 8000,
+              "js": 6000,
+              "delta": 2000,
+              "tol": 1
+            }
+          ]
+        },
+        {
+          "line": 6,
+          "type": "OPCODE_MISMATCH",
+          "py": "G10 ; retract",
+          "js": "G1 F6000 X25 Y5 E0.748353"
+        },
+        {
+          "line": 7,
+          "type": "NUMERIC_DIFF",
+          "py": "G1 F6000 X25 Y5 E0.748353",
+          "js": "G1 Y25 E1.496706",
+          "numericIssues": [
+            {
+              "param": "F",
+              "reason": "missing",
+              "py": 6000
+            },
+            {
+              "param": "X",
+              "reason": "missing",
+              "py": 25
+            }
+          ],
+          "toleranceIssues": [
+            {
+              "param": "Y",
+              "py": 5,
+              "js": 25,
+              "delta": 20,
+              "tol": 0.0005
+            },
+            {
+              "param": "E",
+              "py": 0.748353,
+              "js": 1.496706,
+              "delta": 0.748353,
+              "tol": 0.000001
+            }
+          ]
+        },
+        {
+          "line": 8,
+          "type": "MISSING_JS",
+          "py": "G11 ; unretract"
+        },
+        {
+          "line": 9,
+          "type": "MISSING_JS",
+          "py": "G1 F1800 Y25 E1.496706"
+        }
+      ]
+    },
+    {
+      "scenario": "square",
+      "status": "ERROR",
+      "pyError": "Traceback (most recent call last):\n  File \"C:\\Users\\kyle\\projects\\gcode\\fullcontrol-js\\scripts\\parity\\scenarios\\py\\square.py\", line 24, in <module>\n    steps.append(fc.Point(x=start_x, y=start_y, z=layer_height))\n    ^^^^^\nNameError: name 'steps' is not defined\n"
+    },
+    {
+      "scenario": "stationary_extrusion",
+      "status": "FAIL",
+      "totalDiffs": 6,
+      "semanticDiffs": 6,
+      "diffs": [
+        {
+          "line": 2,
+          "type": "NUMERIC_DIFF",
+          "py": "G0 F8000 X5 Y5 Z0.2",
+          "js": "G0 F5000 X5 Y5 Z0.2",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "F",
+              "py": 8000,
+              "js": 5000,
+              "delta": 3000,
+              "tol": 1
+            }
+          ]
+        },
+        {
+          "line": 3,
+          "type": "OPCODE_MISMATCH",
+          "py": "M82 ; absolute extrusion",
+          "js": "G1 F900 E0.831503"
+        },
+        {
+          "line": 4,
+          "type": "OPCODE_MISMATCH",
+          "py": "G92 E0 ; reset extrusion position to zero",
+          "js": "G1 F5000 Z0.5"
+        },
+        {
+          "line": 5,
+          "type": "NUMERIC_DIFF",
+          "py": "G1 F900 E0.831503",
+          "js": "G1 F900 E2.078758",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "E",
+              "py": 0.831503,
+              "js": 2.078758,
+              "delta": 1.247255,
+              "tol": 0.000001
+            }
+          ]
+        },
+        {
+          "line": 6,
+          "type": "MISSING_JS",
+          "py": "G1 F900 Z0.5 E0.841481"
+        },
+        {
+          "line": 7,
+          "type": "MISSING_JS",
+          "py": "G1 F900 E2.08874"
+        }
+      ]
+    },
+    {
+      "scenario": "travel_between_extrusions",
+      "status": "FAIL",
+      "totalDiffs": 2,
+      "semanticDiffs": 2,
+      "diffs": [
+        {
+          "line": 2,
+          "type": "NUMERIC_DIFF",
+          "py": "G0 F8000 X0 Y0 Z0.2",
+          "js": "G0 F7000 X0 Y0 Z0.2",
+          "numericIssues": [],
+          "toleranceIssues": [
+            {
+              "param": "F",
+              "py": 8000,
+              "js": 7000,
+              "delta": 1000,
+              "tol": 1
+            }
+          ]
+        },
+        {
+          "line": 7,
+          "type": "NUMERIC_DIFF",
+          "py": "G1 F1600 X25 E0.873079",
+          "js": "G1 X25 E0.873079",
+          "numericIssues": [
+            {
+              "param": "F",
+              "reason": "missing",
+              "py": 1600
+            }
+          ],
+          "toleranceIssues": []
+        }
+      ]
+    }
+  ],
+  "generated": "2025-10-01T16:36:32.241Z"
+}

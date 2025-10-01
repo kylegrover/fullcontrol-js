@@ -1,0 +1,6 @@
+M83 ; relative extrusion
+G0 F8000 X0 Y0 Z0.2
+M83 ; relative extrusion
+G1 F1500 X15 E0.779534
+G1 F5000 Y5 E0
+G1 F1500 X30 E0.779534

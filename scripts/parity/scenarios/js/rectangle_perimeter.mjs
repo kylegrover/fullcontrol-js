@@ -17,7 +17,7 @@ const seq = [
   geom,
   new Point({ x:0, y:0, z }),
   new Extruder({ on:true }),
-  new Point({ x:w, y:0, z }),
+  new Point({ x:w, y:0, z, speed: 1800 }),
   new Point({ x:w, y:h, z }),
   new Point({ x:0, y:h, z }),
   new Point({ x:0, y:0, z }), // close loop

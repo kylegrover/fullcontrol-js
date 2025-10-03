@@ -1,3 +1,5 @@
+import fullcontrol as fc
+steps = []
 
 # Define the printer settings to override the default settings (shown below)
 printer_name = 'generic'
@@ -28,3 +30,7 @@ steps.append(fc.Point(x=start_x + side_length, y=start_y, z=layer_height))
 steps.append(fc.Point(x=start_x + side_length, y=start_y + side_length, z=layer_height))
 steps.append(fc.Point(x=start_x, y=start_y + side_length, z=layer_height))
 steps.append(fc.Point(x=start_x, y=start_y, z=layer_height))
+
+
+res = fc.transform(steps, result_type='gcode')
+print(res)

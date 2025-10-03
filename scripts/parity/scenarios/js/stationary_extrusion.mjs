@@ -5,14 +5,14 @@ import { Point, Printer, Extruder, StationaryExtrusion, transform } from '../../
 const printer = new Printer({ print_speed: 900, travel_speed: 5000 })
 const extruder = new Extruder({ units: 'mm', dia_feed: 1.75, relative_gcode: false, travel_format: 'G1_E0' })
 
-// Two stationary extrusions one after another (e.g., priming blobs) at same XY but different Z heights.
+// Mirror Python scenario exactly (no explicit geometry or extruder on/off steps; relies on defaults and stationary volumes)
 const seq = [
   printer,
   extruder,
   new Point({ x:5, y:5, z:0.2 }),
-  new StationaryExtrusion({ volume: 2.0 }),
+  new StationaryExtrusion({ volume: 2.0, speed: 900 }),
   new Point({ x:5, y:5, z:0.5 }),
-  new StationaryExtrusion({ volume: 3.0 }),
+  new StationaryExtrusion({ volume: 3.0, speed: 900 })
 ]
 
 const g = transform(seq, 'gcode', { show_tips:false, show_banner:false }).gcode

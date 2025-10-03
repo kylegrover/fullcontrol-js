@@ -19,11 +19,14 @@ export abstract class BaseModelPlus {
   updateFrom(source: any) {
     if (!source) return
     for (const [k, v] of Object.entries(source)) {
-      if (v !== undefined && Object.prototype.hasOwnProperty.call(this, k)) {
-        ;(this as any)[k] = v
-      }
+      if (v === undefined) continue
+      // Mirror Python behavior: attributes can appear dynamically
+      ;(this as any)[k] = v
     }
   }
+
+  // Python parity alias
+  update_from(source: any) { this.updateFrom(source) }
 
   copy<T extends this>(): T {
     const clone = Object.create(this.constructor.prototype)

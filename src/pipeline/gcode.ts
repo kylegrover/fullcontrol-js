@@ -5,372 +5,134 @@ import { Printer } from '../models/printer.js'
 import { ManualGcode, GcodeComment, PrinterCommand, GcodeStateLike } from '../models/commands.js'
 import { GcodeControls } from '../models/controls.js'
 
-function distance(a: Point, b: Point) {
-  const ax = a.x ?? b.x ?? 0, ay = a.y ?? b.y ?? 0, az = a.z ?? b.z ?? 0
-  const bx = b.x ?? a.x ?? 0, by = b.y ?? a.y ?? 0, bz = b.z ?? a.z ?? 0
-  const dx = bx - ax, dy = by - ay, dz = bz - az
-  return Math.sqrt(dx*dx + dy*dy + dz*dz)
-}
-
-// Generic formatter: keep up to p decimals, trim trailing zeros and dot
-const fmt = (v: number, p: number) => v.toFixed(p).replace(/\.0+$/,'').replace(/(\.[0-9]*?)0+$/,'$1')
-// Specific formatters for parity clarity
-const fmtCoord = (v: number) => fmt(v, 3)
-const fmtExtrude = (v: number) => fmt(v, 6)
-
 export function generate_gcode(state: State, controls?: Partial<GcodeControls>) {
-  let prevPoint: Point | undefined
-  let lastLine: string | undefined
   const gstate: GcodeStateLike = { printer: state.printer || new Printer(), gcode: state.gcodeLines }
-  let currentExtruder: Extruder | undefined = state.extruders[0]
-  let geometry: ExtrusionGeometry | undefined
-  // Track last absolute extrusion position (E) for parity mode so we can mirror Python's retention of E on travels
-  let lastE: number | undefined
-  const silent = !!controls?.silent
-  const showBanner = !silent && controls?.show_banner !== false
-  const showTips = !silent && controls?.show_tips !== false
-  if (showBanner) {
-    // Banner should be stdout only for parity with Python (ManualGcode provides content when printer start sequence runs)
-    console.log(`; Time to print!!!!!\n; GCode created with FullControl - tell us what you're printing!\n; info@fullcontrol.xyz or tag FullControlXYZ on Twitter/Instagram/LinkedIn/Reddit/TikTok`)
+  // ensure extrusion geometry area computed
+  if (state.extrusion_geometry && state.extrusion_geometry.area == null) {
+    try { state.extrusion_geometry.update_area() } catch {}
   }
-  if (showTips) {
-    // Mirror Python tips style: only print if potential issues
-    let tipStr = ''
-    if (!state.printer) {
-      // Python prints a printer warning during controls.initialize; emulate minimal guidance here
-      tipStr += "warning: printer is not set - defaulting may omit start gcode. Set controls.printer_name or add a Printer() instance.\n"
-    }
-    const firstExtruder = state.extruders[0]
-    if (firstExtruder && firstExtruder.units === 'mm3' && (firstExtruder.dia_feed == null)) {
-      tipStr += "tip: set Extruder.dia_feed for mm^3 extrusion (filament or syringe diameter)\n"
-    }
-    if (!geometry) {
-      tipStr += "tip: set initial extrusion_width and extrusion_height (ExtrusionGeometry) for correct volumetric extrusion\n"
-    } else if ((geometry as any).area == null) {
-      tipStr += "tip: geometry area not computed; ensure width & height or explicit area are set\n"
-    }
-    if (tipStr) {
-      console.log('fc.transform guidance tips (hide with show_tips=false)\n' + tipStr.trimEnd())
-    }
-  }
-  // Attempt to locate first geometry object among steps if present
-  for (const s of state.steps) if (s instanceof ExtrusionGeometry) { geometry = s; geometry.update_area(); break }
-  // Initialization parity flags
-  let initialTravelDone = false
-  let absoluteModeDeferred = false
-  let relativeModeReaffirmed = false
-  // We now defer any mode emission until we actually encounter the first Extruder instance.
-
+  let firstMovementEmitted = false
+  const pendingModeAfterFirstMove: string[] = [] // queue mode changes that Python emits after first movement (e.g., switch to absolute)
+  let seenFirstMode = false
+  let queuedPrinterUpdate: Printer | null = null
   for (const step of state.steps) {
-    if (!step) continue
-      // Handle Extruder mode / attribute change lines before point moves when encountering an Extruder instance.
-      // Points
-      // Geometry switch
-    if (step instanceof ExtrusionGeometry) { geometry = step; geometry.update_area(); continue }
-
-    if (step instanceof Point) {
-      state.addPoint(step)
-      if (!prevPoint) {
-        // First point: always a travel (G0) with full XYZ and travel feed (fallback 8000) before any mode switch to absolute.
-        let travelF = 8000
-        if (state.printer?.travel_speed) travelF = Math.round(state.printer.travel_speed)
-        const parts: string[] = ['G0', `F${travelF}`]
-        if (step.x != null) parts.push(`X${fmtCoord(step.x)}`)
-        if (step.y != null) parts.push(`Y${fmtCoord(step.y)}`)
-        if (step.z != null) parts.push(`Z${fmtCoord(step.z)}`)
-        const line = parts.join(' ')
-        state.addGcode(line)
-        lastLine = line
-        initialTravelDone = true
-      } else {
-        const moveDist = distance(prevPoint, step)
-        const extrudingFlag = currentExtruder?.on || (step as any).extrude
-        const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
-
-        // Emit mode lines immediately before first extrusion per Python ordering rules.
-        if (isExtrude) {
-          if (absoluteModeDeferred && currentExtruder) {
-            // Switch into absolute only at first extrusion.
-            state.addGcode('M82 ; absolute extrusion')
-            state.addGcode('G92 E0 ; reset extrusion position to zero')
-            absoluteModeDeferred = false
-            lastE = 0
-          } else if (currentExtruder?.relative_gcode === true && !relativeModeReaffirmed && initialTravelDone) {
-            // Reaffirm relative mode prior to first extrusion (Python emits M83 twice in many cases)
-            state.addGcode('M83 ; relative extrusion')
-            relativeModeReaffirmed = true
-          }
-        }
-        const g = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-        // feedrate first if changed
-        let f = ''
-        if (state.printer) {
-          if (step.speed != null) {
-            const extruding = !!extrudingFlag
-            if (extruding) {
-              state.printer.print_speed = step.speed
-            } else {
-              state.printer.travel_speed = step.speed
+    // arrays of points
+    if (Array.isArray(step) && step.length && step[0] instanceof Point) {
+      for (const pt of step) {
+        state.addPoint(pt)
+        const line = pt.gcode(state)
+        if (line) {
+          state.addGcode(line)
+          if (!firstMovementEmitted) {
+            firstMovementEmitted = true
+            // After first movement, flush any queued mode changes (e.g., switch to absolute)
+            if (pendingModeAfterFirstMove.length) {
+              for (const m of pendingModeAfterFirstMove) state.addGcode(m)
+              pendingModeAfterFirstMove.length = 0
             }
-            state.printer.speed_changed = true
-          }
-          f = state.printer.f_gcode(!!extrudingFlag)
-          state.printer.speed_changed = false
-        }
-  let xyz = ''
-  if (step.x != null && prevPoint.x !== step.x) xyz += `X${fmtCoord(step.x)} `
-  if (step.y != null && prevPoint.y !== step.y) xyz += `Y${fmtCoord(step.y)} `
-  if (step.z != null && prevPoint.z !== step.z) xyz += `Z${fmtCoord(step.z)} `
-  xyz = xyz.trimEnd()
-        let e = ''
-        if (isExtrude) {
-          currentExtruder.update_e_ratio()
-          const volume = moveDist * geometry!.area!
-          const eVol = currentExtruder.get_and_update_volume(volume) * (currentExtruder.volume_to_e || 1)
-          e = `E${fmtExtrude(eVol)}`
-            if (currentExtruder.relative_gcode === false) lastE = Number(e.substring(1))
-        } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
-          if (currentExtruder.relative_gcode === false) {
-            if (lastE != null) e = `E${fmtExtrude(lastE)}`
-          } else {
-            e = 'E0'
           }
         }
-        const parts = [g]
-        if (f.trim()) parts.push(f.trim())
-        if (xyz) parts.push(xyz)
-        if (e) parts.push(e)
-        const line = parts.join(' ')
-        state.addGcode(line)
-        lastLine = line
       }
-      prevPoint = step
       continue
     }
-    // Arrays of points
-    if (Array.isArray(step) && step.length && step[0] instanceof Point) {
-      for (const p of step as Point[]) {
-        // recurse logic by pushing back into loop? Simpler: duplicate block
-        state.addPoint(p)
-        if (!prevPoint) {
-          let g = (currentExtruder?.on || (p as any).extrude) ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-          let f = ''
-          if (state.printer) {
-            if (p.speed != null) {
-              if (currentExtruder?.on) state.printer.print_speed = p.speed; else state.printer.travel_speed = p.speed
-              state.printer.speed_changed = true
-            } else {
-              state.printer.speed_changed = true
-            }
-            f = state.printer.f_gcode(!!currentExtruder?.on)
-            state.printer.speed_changed = false
+    if (step instanceof Point) {
+      state.addPoint(step)
+      const line = step.gcode(state)
+      if (line) {
+        state.addGcode(line)
+        if (!firstMovementEmitted) {
+          firstMovementEmitted = true
+          if (pendingModeAfterFirstMove.length) {
+            for (const m of pendingModeAfterFirstMove) state.addGcode(m)
+            pendingModeAfterFirstMove.length = 0
           }
-          let xyz = ''
-          if (p.x != null) xyz += `X${fmtCoord(p.x)} `
-          if (p.y != null) xyz += `Y${fmtCoord(p.y)} `
-          if (p.z != null) xyz += `Z${fmtCoord(p.z)} `
-          xyz = xyz.trimEnd()
-          let e = ''
-          if (!(currentExtruder?.on || (p as any).extrude) && currentExtruder?.travel_format === 'G1_E0') e = 'E0'
-          const parts = [g]
-          if (f.trim()) parts.push(f.trim())
-          if (xyz) parts.push(xyz)
-          if (e) parts.push(e)
-          const line = parts.join(' ')
-          state.addGcode(line)
-          lastLine = line
-        } else {
-          const moveDist = distance(prevPoint, p)
-          const extrudingFlag = currentExtruder?.on || (p as any).extrude
-          const isExtrude = !!extrudingFlag && geometry?.area && currentExtruder
-          const g = extrudingFlag ? 'G1' : (currentExtruder?.travel_format === 'G1_E0' ? 'G1' : 'G0')
-          let f = ''
-          if (state.printer) {
-            if (p.speed != null) {
-              const extruding = !!extrudingFlag
-              if (extruding) {
-                state.printer.print_speed = p.speed
-              } else {
-                state.printer.travel_speed = p.speed
-              }
-              state.printer.speed_changed = true
-            }
-            f = state.printer.f_gcode(!!extrudingFlag)
-            state.printer.speed_changed = false
-          }
-          let xyz = ''
-          if (p.x != null && prevPoint.x !== p.x) xyz += `X${fmtCoord(p.x)} `
-          if (p.y != null && prevPoint.y !== p.y) xyz += `Y${fmtCoord(p.y)} `
-          if (p.z != null && prevPoint.z !== p.z) xyz += `Z${fmtCoord(p.z)} `
-          xyz = xyz.trimEnd()
-          let e = ''
-          if (isExtrude) {
-            currentExtruder!.update_e_ratio()
-            const volume = moveDist * geometry!.area!
-            const eVol = currentExtruder!.get_and_update_volume(volume) * (currentExtruder!.volume_to_e || 1)
-            e = `E${fmtExtrude(eVol)}`
-            if (currentExtruder!.relative_gcode === false) lastE = Number(e.substring(1))
-          } else if (currentExtruder && currentExtruder.travel_format === 'G1_E0') {
-            if (currentExtruder.relative_gcode === false) {
-              if (lastE != null) e = `E${fmtExtrude(lastE)}`
-            } else {
-              e = 'E0'
-            }
-          }
-          const parts = [g]
-          if (f.trim()) parts.push(f.trim())
-          if (xyz) parts.push(xyz)
-          if (e) parts.push(e)
-          const line = parts.join(' ')
-          state.addGcode(line)
-          lastLine = line
+          if (queuedPrinterUpdate) { queuedPrinterUpdate.gcode(state as any); queuedPrinterUpdate = null }
         }
-        prevPoint = p
       }
+      continue
+    }
+    if (step instanceof ExtrusionGeometry) {
+      step.gcode(state)
+      continue
+    }
+    if (step instanceof StationaryExtrusion) {
+      const line = step.gcode(state)
+      if (line) state.addGcode(line)
+      continue
+    }
+    if (step instanceof Retraction) {
+      const line = step.gcode(state)
+      if (line) state.addGcode(line)
+      continue
+    }
+    if (step instanceof Unretraction) {
+      const line = step.gcode(state)
+      if (line) state.addGcode(line)
+      continue
+    }
+    if (step instanceof Extruder) {
+      const prevOn = state.extruder.on
+      const line = step.gcode(state)
+      const becameOn = step.on === true && prevOn !== true
+      if (line) {
+        const lines = line.split('\n')
+        if (!firstMovementEmitted) {
+          // Emit only the first mode line group before movement; defer any subsequent (switch to absolute) until after first move
+          if (!seenFirstMode) {
+            for (const l of lines) state.addGcode(l)
+            seenFirstMode = true
+          } else {
+            pendingModeAfterFirstMove.push(...lines)
+          }
+        } else {
+          for (const l of lines) state.addGcode(l)
+        }
+      }
+      if (becameOn && !firstMovementEmitted) {
+        // activation before first movement should not force mode lines; just mark on for when the next point extrudes
+        state.extruder.on = true
+        if (state.printer) state.printer.speed_changed = true
+      } else if (becameOn) {
+        if (state.printer) state.printer.speed_changed = true
+      }
+      if (step.on === false && prevOn === true) {
+        if (state.printer) state.printer.speed_changed = true
+      }
+      continue
+    }
+    if (step instanceof Printer) {
+      if (!firstMovementEmitted) queuedPrinterUpdate = step
+      else step.gcode(state as any)
       continue
     }
     // Manual gcode
     if (step instanceof ManualGcode) {
       const out = step.gcode()
       if (out) state.addGcode(out)
-      lastLine = state.gcodeLines[state.gcodeLines.length - 1]
       continue
     }
     // Comment
     if (step instanceof GcodeComment) {
       const out = step.gcode(gstate)
       if (out) state.addGcode(out)
-      lastLine = state.gcodeLines[state.gcodeLines.length - 1]
       continue
     }
     // Printer command (placeholder)
     if (step instanceof PrinterCommand) {
+      // Map firmware-based retract/unretract if available in printer.command_list similar to Python device settings
       let out = step.gcode(gstate)
-      // No environment-based overrides for retraction; rely on explicit Retraction/Unretraction objects.
+      if (state.printer?.command_list && step.id) {
+        const cmd = (state.printer.command_list as Record<string,string>)[step.id]
+        if (cmd) out = cmd
+      }
       if (out) state.addGcode(out)
-      lastLine = state.gcodeLines[state.gcodeLines.length - 1]
-      continue
-    }
-    // Printer / Extruder registration
-    if (step instanceof Printer) { 
-      // merge new_command semantics
-      if (state.printer && step.new_command) {
-        state.printer.command_list = { ...(state.printer.command_list||{}), ...(step.new_command||{}) }
-      } else {
-        state.printer = step; gstate.printer = step
-      }
-      continue 
-    }
-    if (step instanceof Extruder) { 
-      if (!currentExtruder) {
-        currentExtruder = step
-        if (currentExtruder.total_volume == null) currentExtruder.total_volume = 0
-        if (currentExtruder.total_volume_ref == null) currentExtruder.total_volume_ref = 0
-        state.extruders.push(step)
-        // Python observed behavior: start in relative (emit M83) even if extruder ultimately uses absolute; defer absolute switch until first extrusion.
-        if (currentExtruder.relative_gcode === false) {
-          state.addGcode('M83 ; relative extrusion')
-          absoluteModeDeferred = true
-        } else if (currentExtruder.relative_gcode === true) {
-          state.addGcode('M83 ; relative extrusion')
-          // We'll reaffirm before first extrusion if needed.
-        }
-      } else {
-        // detect relative mode change
-        const prevRel = currentExtruder.relative_gcode
-        if (step.relative_gcode != null && step.relative_gcode !== prevRel) {
-          currentExtruder.relative_gcode = step.relative_gcode
-          // reset reference on mode switch
-          currentExtruder.total_volume_ref = currentExtruder.total_volume || 0
-          if (currentExtruder.relative_gcode) {
-            state.addGcode('M83 ; relative extrusion')
-            relativeModeReaffirmed = false // allow reaffirmation before next first extrusion in new mode
-            absoluteModeDeferred = false
-          } else {
-            // Switching from relative to absolute mid-stream: emit M82+G92 immediately (Python style for mode change events)
-            state.addGcode('M82 ; absolute extrusion')
-            state.addGcode('G92 E0 ; reset extrusion position to zero')
-            absoluteModeDeferred = false
-          }
-        }
-        if (step.on != null) {
-          const prevOn = currentExtruder.on
-          currentExtruder.on = step.on
-          // Speed change flag handled by standard logic above; no parity gating.
-        }
-        if (step.units != null || step.dia_feed != null) {
-          if (step.units != null) currentExtruder.units = step.units
-          if (step.dia_feed != null) currentExtruder.dia_feed = step.dia_feed
-          currentExtruder.update_e_ratio()
-        }
-        if (step.travel_format != null) currentExtruder.travel_format = step.travel_format
-      }
-      continue
-    }
-    if (step instanceof Retraction) {
-      if (!currentExtruder) continue
-      currentExtruder.update_e_ratio()
-      const length = step.length ?? currentExtruder.retraction_length ?? 0
-      const vol = length * (currentExtruder.units === 'mm3' ? 1 : (1 / (currentExtruder.volume_to_e || 1)))
-      // negative extrusion for retraction
-      const eVal = currentExtruder.get_and_update_volume(-vol) * (currentExtruder.volume_to_e || 1)
-      let line = 'G1'
-      line += ` E${fmtExtrude(eVal)}`
-      if (step.speed != null && state.printer) {
-        state.printer.print_speed = step.speed
-        state.printer.speed_changed = true
-        const fSnippet = state.printer.f_gcode(true)
-        if (fSnippet.trim()) line += ' ' + fSnippet.trim()
-        state.printer.speed_changed = false
-      }
-      state.addGcode(line)
-      lastLine = line
-      continue
-    }
-    if (step instanceof Unretraction) {
-      if (!currentExtruder) continue
-      currentExtruder.update_e_ratio()
-      const length = step.length ?? currentExtruder.retraction_length ?? 0
-      const vol = length * (currentExtruder.units === 'mm3' ? 1 : (1 / (currentExtruder.volume_to_e || 1)))
-      const eVal = currentExtruder.get_and_update_volume(vol) * (currentExtruder.volume_to_e || 1)
-      let line = 'G1'
-      line += ` E${fmtExtrude(eVal)}`
-      if (step.speed != null && state.printer) {
-        state.printer.print_speed = step.speed
-        state.printer.speed_changed = true
-        const fSnippet = state.printer.f_gcode(true)
-        if (fSnippet.trim()) line += ' ' + fSnippet.trim()
-        state.printer.speed_changed = false
-      }
-      state.addGcode(line)
-      lastLine = line
-      continue
-    }
-    if (step instanceof StationaryExtrusion) {
-      if (!currentExtruder) continue
-      currentExtruder.update_e_ratio()
-      const eVol = currentExtruder.get_and_update_volume(step.volume) * (currentExtruder.volume_to_e || 1)
-      // Python ordering: G1 F... E...
-      let f = ''
-      if (state.printer) {
-        if (step.speed != null) {
-          state.printer.print_speed = step.speed
-          state.printer.speed_changed = true
-        } else {
-          state.printer.speed_changed = true
-        }
-        f = state.printer.f_gcode(true)
-        state.printer.speed_changed = false
-      }
-      const parts = ['G1']
-      if (f.trim()) parts.push(f.trim())
-      parts.push(`E${fmtExtrude(eVol)}`)
-      const line = parts.join(' ')
-      state.addGcode(line)
-      lastLine = line
       continue
     }
     // Unknown: ignore for now (future geometry containers, etc.)
+  }
+  // If we somehow ended without movement but queued mode lines, append them (edge case)
+  if (!firstMovementEmitted && pendingModeAfterFirstMove.length) {
+    for (const m of pendingModeAfterFirstMove) state.addGcode(m)
   }
   // Basic feedrate stamping if printer present
   // Final feedrate line not necessary; we append per-move when changed

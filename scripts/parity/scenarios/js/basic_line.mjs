@@ -14,5 +14,6 @@ const seq = [
   new Point({ x:10, y:0, z:0.2 }),
   new Extruder({ on:false })
 ]
-const g = transform(seq, 'gcode', { show_tips:false, show_banner:false }).gcode
+// Pass initialization_data to align with explicit extruder settings (avoid default relative_e true injection)
+const g = transform(seq, 'gcode', { show_tips:false, show_banner:false, initialization_data: { relative_e: false } }).gcode
 process.stdout.write(g.trimEnd() + '\n')

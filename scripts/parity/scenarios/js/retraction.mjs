@@ -1,6 +1,6 @@
 import { Point, Printer, Extruder, ExtrusionGeometry, PrinterCommand, transform } from '../../../../dist/index.js'
 
-const printer = new Printer({ print_speed: 1800, travel_speed: 6000 })
+const printer = new Printer({ print_speed: 1800, travel_speed: 6000, command_list: { retract: 'G10 ; retract', unretract: 'G11 ; unretract' } })
 const extruder = new Extruder({ units: 'mm', dia_feed: 1.75, relative_gcode: false, travel_format: 'G1_E0', retraction_length: 2.0 })
 const geom = new ExtrusionGeometry({ area_model: 'rectangle', width: 0.45, height: 0.2 })
 const seq = [

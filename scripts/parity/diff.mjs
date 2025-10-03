@@ -98,6 +98,7 @@ function discover(){
 // (Simplified) Assume dist build exists or scenarios compile on demand.
 
 const names = process.argv.slice(2).length ? process.argv.slice(2) : discover()
+const debugTargets = (process.env.PARITY_DEBUG||'').split(/[,\s]+/).filter(Boolean)
 const summary = []
 let fail = 0
 for(const n of names){
@@ -113,6 +114,13 @@ for(const n of names){
     continue
   }
   const diffs = compare(py.lines, js.lines)
+  if(debugTargets.includes(n)){
+    const dumpDir = path.join(root,'debug')
+    if(!fs.existsSync(dumpDir)) fs.mkdirSync(dumpDir)
+    fs.writeFileSync(path.join(dumpDir, `${n}-py.txt`), py.lines.join('\n'))
+    fs.writeFileSync(path.join(dumpDir, `${n}-js.txt`), js.lines.join('\n'))
+    fs.writeFileSync(path.join(dumpDir, `${n}-diffs.json`), JSON.stringify(diffs, null, 2))
+  }
   const semantic = diffs.filter(d=> d.type !== 'FORMAT_DIFF').length
   const status = diffs.length === 0 ? 'PASS' : (semantic? 'FAIL':'WARN')
   if(status === 'FAIL') fail++

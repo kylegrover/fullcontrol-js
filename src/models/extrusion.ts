@@ -18,6 +18,13 @@ export class ExtrusionGeometry extends BaseModelPlus {
   }
   toJSON() { return { area_model: this.area_model, width: this.width, height: this.height, diameter: this.diameter, area: this.area } }
   static fromJSON(d: any) { return new ExtrusionGeometry(d) }
+  gcode(state: any) {
+    state.extrusion_geometry.updateFrom(this)
+    if (this.width != null || this.height != null || this.diameter != null || this.area_model != null) {
+      try { state.extrusion_geometry.update_area() } catch {}
+    }
+    return undefined
+  }
 }
 
 export class StationaryExtrusion extends BaseModelPlus {
@@ -27,6 +34,13 @@ export class StationaryExtrusion extends BaseModelPlus {
   constructor(init?: Partial<StationaryExtrusion>) { super(init) }
   toJSON() { return { volume: this.volume, speed: this.speed } }
   static fromJSON(d: any) { return new StationaryExtrusion(d) }
+  gcode(state: any) {
+    if (state.printer) state.printer.speed_changed = true
+    const eVal = state.extruder.get_and_update_volume(this.volume) * state.extruder.volume_to_e
+    // Python state after primer typically has extruder.on True; ensure subsequent Z-only move is treated as printing
+    if (state.extruder && state.extruder.on !== true) state.extruder.on = true
+    return `G1 F${this.speed} E${eVal.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+  }
 }
 
 export class Extruder extends BaseModelPlus {
@@ -51,12 +65,51 @@ export class Extruder extends BaseModelPlus {
     if (this.total_volume == null) this.total_volume = 0
     if (this.total_volume_ref == null) this.total_volume_ref = 0
     this.total_volume += volume
+    // Reduce floating drift to align with Python double rounding when formatted to 6 decimals
+  this.total_volume = Math.round(this.total_volume * 1e12) / 1e12
     const ret = this.total_volume - this.total_volume_ref
     if (this.relative_gcode) this.total_volume_ref = this.total_volume
     return ret
   }
   toJSON() { return { on: this.on, units: this.units, dia_feed: this.dia_feed, relative_gcode: this.relative_gcode } }
   static fromJSON(d: any) { return new Extruder(d) }
+  e_gcode(point1: Point, state: any) {
+    const distance_forgiving = (p1: Point, p2: Point) => {
+      const dx = (p1.x == null || p2.x == null) ? 0 : p1.x - p2.x
+      const dy = (p1.y == null || p2.y == null) ? 0 : p1.y - p2.y
+      const dz = (p1.z == null || p2.z == null) ? 0 : p1.z - p2.z
+      return Math.sqrt(dx*dx + dy*dy + dz*dz)
+    }
+    if (this.on) {
+      const length = distance_forgiving(point1, state.point)
+      if (length === 0) return ''
+      const area = state.extrusion_geometry?.area || 0
+      const ratio = this.volume_to_e || 1
+      const val = this.get_and_update_volume(length * area) * ratio
+      return `E${val.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+    } else {
+      if (this.travel_format === 'G1_E0') {
+        const ratio = this.volume_to_e || 1
+        const val = this.get_and_update_volume(0) * ratio
+        return `E${val.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+      }
+      return ''
+    }
+  }
+  gcode(state: any) {
+    state.extruder.updateFrom(this)
+    if (this.on != null && state.printer) state.printer.speed_changed = true
+    if (this.units != null || this.dia_feed != null) state.extruder.update_e_ratio()
+    if (this.relative_gcode != null) {
+      // Only emit if mode actually changed (Python emits when designer sets attribute)
+      state.extruder.total_volume_ref = state.extruder.total_volume
+      if (this.relative_gcode !== state._last_mode_emitted) {
+        state._last_mode_emitted = this.relative_gcode
+        return state.extruder.relative_gcode ? 'M83 ; relative extrusion' : 'M82 ; absolute extrusion\nG92 E0 ; reset extrusion position to zero'
+      }
+    }
+    return undefined
+  }
 }
 
 export class Retraction extends BaseModelPlus {
@@ -66,6 +119,44 @@ export class Retraction extends BaseModelPlus {
   constructor(init?: Partial<Retraction>) { super(init) }
   toJSON() { return { length: this.length, speed: this.speed } }
   static fromJSON(d: any) { return new Retraction(d) }
+  gcode(state: any) {
+    // Firmware based retraction preferred if printer.command_list has 'retract'
+    const cmdMap = state.printer?.command_list as Record<string,string> | undefined
+    if (cmdMap && cmdMap.retract) return undefined // handled as PrinterCommand in pipeline if user inserted one
+    // Otherwise emulate retraction as a negative stationary extrusion (relative extrusion or absolute E delta)
+    const len = this.length ?? state.extruder.retraction_length
+    if (len == null || len === 0) return undefined
+    const speed = this.speed ?? state.extruder.retraction_speed ?? 1800
+    // Mark feedrate change
+    if (state.printer) state.printer.speed_changed = true
+    // Convert a linear retraction length (in mm of filament) into volume -> E using volume_to_e inverse
+    // Python uses StationaryExtrusion(volume=neg, speed) where negative volume indicates retraction
+    // Here we bypass volume and directly compute E delta in filament units (assuming units='mm')
+    const ratio = state.extruder.volume_to_e || 1
+    // If units=mm3 then len is linear filament; must convert to volume: pi*(dia/2)^2 * len so that * volume_to_e yields linear again.
+    let eDelta: number
+    if (state.extruder.units === 'mm3') {
+      if (state.extruder.dia_feed) {
+        const area = Math.PI * (state.extruder.dia_feed/2)**2
+        eDelta = len * area * ratio
+      } else {
+        return undefined // cannot compute
+      }
+    } else {
+      eDelta = len * ratio
+    }
+    // Update extruder volume bookkeeping as negative extrusion
+    state.extruder.get_and_update_volume(-(eDelta / ratio))
+    const eVal = state.extruder.total_volume - state.extruder.total_volume_ref
+    if (state.extruder.relative_gcode) {
+      // relative: E value is negative delta
+      const rel = -eDelta
+      return `G1 F${speed} E${rel.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+    } else {
+      // absolute: current E after negative move
+      return `G1 F${speed} E${(eVal*ratio).toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+    }
+  }
 }
 
 export class Unretraction extends BaseModelPlus {
@@ -75,4 +166,30 @@ export class Unretraction extends BaseModelPlus {
   constructor(init?: Partial<Unretraction>) { super(init) }
   toJSON() { return { length: this.length, speed: this.speed } }
   static fromJSON(d: any) { return new Unretraction(d) }
+  gcode(state: any) {
+    const cmdMap = state.printer?.command_list as Record<string,string> | undefined
+    if (cmdMap && cmdMap.unretract) return undefined
+    const len = this.length ?? state.extruder.retraction_length
+    if (len == null || len === 0) return undefined
+    const speed = this.speed ?? state.extruder.retraction_speed ?? 1800
+    if (state.printer) state.printer.speed_changed = true
+    const ratio = state.extruder.volume_to_e || 1
+    let eDelta: number
+    if (state.extruder.units === 'mm3') {
+      if (state.extruder.dia_feed) {
+        const area = Math.PI * (state.extruder.dia_feed/2)**2
+        eDelta = len * area * ratio
+      } else return undefined
+    } else {
+      eDelta = len * ratio
+    }
+    // Positive extrusion
+    state.extruder.get_and_update_volume(eDelta / ratio)
+    const eVal = state.extruder.total_volume - state.extruder.total_volume_ref
+    if (state.extruder.relative_gcode) {
+      return `G1 F${speed} E${eDelta.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+    } else {
+      return `G1 F${speed} E${(eVal*ratio).toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+    }
+  }
 }

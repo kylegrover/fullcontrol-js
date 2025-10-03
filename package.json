@@ -24,7 +24,11 @@
     "lint": "eslint 'src/**/*.ts' || true",
     "typecheck": "tsc --noEmit",
     "parity": "node ./scripts/parity/diff.mjs",
-    "prepack": "npm run build && npm run typecheck"
+    "prepack": "npm run build && npm run typecheck",
+    "prepublishOnly": "npm run parity && npm run build && npm run typecheck",
+    "publish:next": "npm publish --access public --tag next",
+    "publish:latest": "npm publish --access public --tag latest",
+    "publish:dry-run": "npm publish --dry-run"
   },
   "files": [
     "dist",

@@ -4,41 +4,10 @@ Modern TypeScript/JavaScript implementation of the core FullControl design + G-c
 
 Runtime Support: Node 16+ (ES2020 output) and modern evergreen browsers.
 
-> **Parity Status**: ✅ **100% Complete** - All 7 automated parity tests passing. `pythonParity` in `package.json` indicates the Python version matched. The JavaScript implementation produces byte-identical G-code output (within numeric tolerances) to the Python version.
 
-## Parity Harness
-Python remains the source of truth. This repository includes an automated parity harness that runs paired real scripts (one Python, one JS) and performs tolerant G-code diffs.
+## Using FullControl JS
 
-Run all scenarios:
-```
-npm run parity
-```
-
-Add a new scenario:
-1. Create `parity/scenarios/py/<name>.py` that prints G-code.
-2. Create `parity/scenarios/js/<name>.mjs` that writes the JS-generated G-code.
-3. Re-run `npm run parity` and ensure no semantic diffs.
-
-Semantic vs formatting differences: numeric fields (X/Y/Z/E/F) are compared with small tolerances defined in `parity/config.json`. Formatting-only differences (spacing, ordering within tolerance) do not fail the run.
-
-See also:
-- `PARITY.md` – high-level feature parity matrix.
-- `parity/README.md` – harness implementation details & roadmap.
-
-## Features
-- ✅ Complete parity with Python FullControl library
-- Mutable model objects (`Point`, `Extruder`, `Printer`, `Fan`, `Hotend`, `Buildplate`)
-- Geometry helpers (polar, move, reflect, arcs, segmentation, shapes, waves, travel_to)
-- Extrusion geometry area models: rectangle, stadium, circle, manual
-- G-code pipeline: movement + extrusion E accumulation (absolute or relative)
-- Proper M82/M83 mode switching and G92 reset handling
-- Retraction and unretraction support
-- Stationary extrusion (volume deposition without movement)
-- Device profiles with initialization sequences and primers
-- Manual / command list G-code insertion + inline comments
-- Design export/import (JSON) with class registry
-- Utility functions: `flatten`, `linspace`, `points_only`, `relative_point`, `first_point`, `last_point`, `check`, `fix`
-- Plot data builder for external visualization
+FullControl JS follows the FullControl python codebase in every way including function names and snake_case. Refer to the FullControl official repo, examples, and documentation for the best up to date information on the library.
 
 ## Install
 ```bash
@@ -66,6 +35,16 @@ const path = [
 const { gcode } = transform([printer, extruder, geom, path])
 console.log(gcode)
 ```
+
+
+## Features
+- Mutable model objects (`Point`, `Extruder`, `Printer`, etc.)
+- Geometry helpers (polar, move, reflect, arcs, segmentation, shapes, waves…)
+- Extrusion geometry area models: rectangle, stadium, circle, manual
+- G-code pipeline: movement + extrusion E accumulation (absolute or relative)
+- Manual / command list G-code insertion + inline comments
+- Design export/import (JSON) + class registry hook
+- Plot data builder for external visualization (structured only)
 
 ## G-code Generation Notes
 - Per-move feedrate appended only when changed (Printer sets `speed_changed` internally via point `speed` override).
@@ -103,6 +82,60 @@ See `examples/` for more patterns:
 - `basic-line.ts`: one extrusion move
 - `square.ts`: perimeter path
 - `spiral.ts`: spiral helix demo (uses geometry helpers)
+
+## Development
+
+- `npm run build` - compile the library for local testing
+- `npm run parity` - run parity tests against Python reference
+- `npm run typecheck` - verify TypeScript types
+- `npm run dev` - watch mode for development
+
+### Publishing to npm
+
+**Prerequisites:**
+1. Ensure you're logged in: `npm login`
+2. Verify authentication: `npm whoami`
+
+**Publishing workflow:**
+```bash
+# 1. Update version in package.json (e.g., 0.2.0 -> 0.2.1)
+# 2. Commit version bump and any changes
+git add .
+git commit -m "Release v0.2.1"
+git tag v0.2.1
+
+# 3. Dry run to verify package contents
+npm run publish:dry-run
+
+# 4. Publish to npm (runs parity tests + build + typecheck automatically)
+npm run publish:npm
+
+# 5. Push tags to GitHub
+git push && git push --tags
+```
+
+**Note:** The `prepublishOnly` script automatically runs parity tests, build, and typecheck before publishing to ensure quality.
+
+> **Parity Status**: ✅ **100% Complete** - All 7 automated parity tests passing. `pythonParity` in `package.json` indicates the Python version matched. The JavaScript implementation produces byte-identical G-code output (within numeric tolerances) to the Python version.
+
+## Parity Harness
+Python remains the source of truth. This repository includes an automated parity harness that runs paired real scripts (one Python, one JS) and performs tolerant G-code diffs.
+
+Run all scenarios:
+```
+npm run parity
+```
+
+Add a new scenario:
+1. Create `parity/scenarios/py/<name>.py` that prints G-code.
+2. Create `parity/scenarios/js/<name>.mjs` that writes the JS-generated G-code.
+3. Re-run `npm run parity` and ensure no semantic diffs.
+
+Semantic vs formatting differences: numeric fields (X/Y/Z/E/F) are compared with small tolerances defined in `parity/config.json`. Formatting-only differences (spacing, ordering within tolerance) do not fail the run.
+
+See also:
+- `PARITY.md` – high-level feature parity matrix.
+- `parity/README.md` – harness implementation details & roadmap.
 
 ## Roadmap
 - Additional parity: advanced transforms, color handling modes, richer annotation semantics.

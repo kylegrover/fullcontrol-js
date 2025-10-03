@@ -6,7 +6,6 @@ import { Fan, Hotend, Buildplate } from '../models/auxiliary.js'
 import { PrinterCommand, ManualGcode, GcodeComment } from '../models/commands.js'
 import { GcodeControls, PlotControls } from '../models/controls.js'
 import { PlotAnnotation } from '../models/annotations.js'
-import { register, get_registered } from '../internal/registry.js'
 
 export function flatten<T>(steps: (T | T[])[]): T[] {
   return steps.flatMap(s => Array.isArray(s) ? s : [s])

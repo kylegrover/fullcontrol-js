@@ -1,5 +1,6 @@
 import { BaseModelPlus } from '../core/base-model.js'
 import { Point } from './point.js'
+import { formatPrecision6, formatExtrusion, formatCoordinate } from '../util/format.js'
 
 export class ExtrusionGeometry extends BaseModelPlus {
   area_model?: 'rectangle' | 'stadium' | 'circle' | 'manual'
@@ -39,7 +40,8 @@ export class StationaryExtrusion extends BaseModelPlus {
     const eVal = state.extruder.get_and_update_volume(this.volume) * state.extruder.volume_to_e
     // Python state after primer typically has extruder.on True; ensure subsequent Z-only move is treated as printing
     if (state.extruder && state.extruder.on !== true) state.extruder.on = true
-    return `G1 F${this.speed} E${eVal.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+    // Python uses .6 format (6 significant figures) for StationaryExtrusion E values
+    return `G1 F${this.speed} E${formatPrecision6(eVal)}`
   }
 }
 
@@ -86,12 +88,12 @@ export class Extruder extends BaseModelPlus {
       const area = state.extrusion_geometry?.area || 0
       const ratio = this.volume_to_e || 1
       const val = this.get_and_update_volume(length * area) * ratio
-      return `E${val.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+      return `E${formatExtrusion(val)}`
     } else {
       if (this.travel_format === 'G1_E0') {
         const ratio = this.volume_to_e || 1
         const val = this.get_and_update_volume(0) * ratio
-        return `E${val.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+        return `E${formatExtrusion(val)}`
       }
       return ''
     }
@@ -101,12 +103,9 @@ export class Extruder extends BaseModelPlus {
     if (this.on != null && state.printer) state.printer.speed_changed = true
     if (this.units != null || this.dia_feed != null) state.extruder.update_e_ratio()
     if (this.relative_gcode != null) {
-      // Only emit if mode actually changed (Python emits when designer sets attribute)
+      // Python emits M83/M82 whenever relative_gcode attribute is set (even if same value)
       state.extruder.total_volume_ref = state.extruder.total_volume
-      if (this.relative_gcode !== state._last_mode_emitted) {
-        state._last_mode_emitted = this.relative_gcode
-        return state.extruder.relative_gcode ? 'M83 ; relative extrusion' : 'M82 ; absolute extrusion\nG92 E0 ; reset extrusion position to zero'
-      }
+      return state.extruder.relative_gcode ? 'M83 ; relative extrusion' : 'M82 ; absolute extrusion\nG92 E0 ; reset extrusion position to zero'
     }
     return undefined
   }
@@ -151,10 +150,10 @@ export class Retraction extends BaseModelPlus {
     if (state.extruder.relative_gcode) {
       // relative: E value is negative delta
       const rel = -eDelta
-      return `G1 F${speed} E${rel.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+      return `G1 F${speed} E${formatExtrusion(rel)}`
     } else {
       // absolute: current E after negative move
-      return `G1 F${speed} E${(eVal*ratio).toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+      return `G1 F${speed} E${formatExtrusion(eVal*ratio)}`
     }
   }
 }
@@ -187,9 +186,9 @@ export class Unretraction extends BaseModelPlus {
     state.extruder.get_and_update_volume(eDelta / ratio)
     const eVal = state.extruder.total_volume - state.extruder.total_volume_ref
     if (state.extruder.relative_gcode) {
-      return `G1 F${speed} E${eDelta.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+      return `G1 F${speed} E${formatExtrusion(eDelta)}`
     } else {
-      return `G1 F${speed} E${(eVal*ratio).toFixed(6).replace(/0+$/,'').replace(/\.$/,'')}`
+      return `G1 F${speed} E${formatExtrusion(eVal*ratio)}`
     }
   }
 }

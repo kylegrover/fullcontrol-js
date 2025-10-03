@@ -1,29 +1,54 @@
 {
   "summary": [
     {
+      "scenario": "basic_line",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "rectangle_perimeter",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "relative_two_segment",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "retraction",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "square",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
       "scenario": "stationary_extrusion",
-      "status": "FAIL",
-      "totalDiffs": 1,
-      "semanticDiffs": 1,
-      "diffs": [
-        {
-          "line": 7,
-          "type": "NUMERIC_DIFF",
-          "py": "G1 F900 E2.08874",
-          "js": "G1 F900 E2.088736",
-          "numericIssues": [],
-          "toleranceIssues": [
-            {
-              "param": "E",
-              "py": 2.08874,
-              "js": 2.088736,
-              "delta": 0.000004000000000115023,
-              "tol": 0.000001
-            }
-          ]
-        }
-      ]
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "travel_between_extrusions",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
     }
   ],
-  "generated": "2025-10-03T17:07:35.378Z"
+  "generated": "2025-10-03T19:10:42.637Z"
 }

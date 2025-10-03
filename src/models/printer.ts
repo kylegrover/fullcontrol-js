@@ -1,4 +1,5 @@
 import { BaseModelPlus } from '../core/base-model.js'
+import { formatFeedrate } from '../util/format.js'
 
 export class Printer extends BaseModelPlus {
   print_speed?: number
@@ -11,7 +12,7 @@ export class Printer extends BaseModelPlus {
   f_gcode(state: any) {
     if (this.speed_changed) {
       const speed = state.extruder?.on ? this.print_speed : this.travel_speed
-      if (speed != null) return `F${speed.toFixed(1).replace(/\.0+$/, '').replace(/\.$/, '')} `
+      if (speed != null) return `F${formatFeedrate(speed)} `
     }
     return ''
   }

@@ -5,7 +5,7 @@ export * from './models/point.js'
 export * from './models/vector.js'
 export * from './models/extrusion.js'
 export * from './models/printer.js'
-export * from './models/components.js'
+export * from './models/auxiliary.js'
 export * from './models/commands.js'
 export * from './models/controls.js'
 export * from './models/annotations.js'
@@ -24,6 +24,10 @@ export * from './geometry/shapes.js'
 export * from './geometry/waves.js'
 export * from './geometry/travel_to.js'
 
+// utility functions
+export * from './util/extra.js'
+export * from './util/check.js'
+
 // pipeline / transform
 export * from './pipeline/state.js'
 export * from './pipeline/gcode.js'
@@ -32,4 +36,5 @@ export * from './pipeline/transform.js'
 
 // devices loader
 export { import_printer } from './devices/community/singletool/import_printer.js'
+
 

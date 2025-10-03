@@ -4,7 +4,7 @@ import { Printer } from '../models/printer.js'
 import { flatten } from '../util/extra.js'
 import { buildPrimer, PrimerName } from '../gcode/primer/index.js'
 import { ManualGcode } from '../models/commands.js'
-import { default_initial_settings } from '../devices/community/singletool/base_settings.js'
+import { set_up as generic_set_up } from '../devices/community/singletool/generic.js'
 
 export interface StepContext {
   prevPoint?: Point
@@ -25,13 +25,16 @@ export class State {
   point: Point = new Point()
   extruder!: Extruder // will assign during init (first extruder)
   extrusion_geometry!: ExtrusionGeometry
-  _last_mode_emitted?: boolean
 
-  constructor(steps: Step[] = [], options?: { initialization_data?: any }) {
+  constructor(steps: Step[] = [], options?: { initialization_data?: any; printer_name?: string }) {
     // Flatten user steps first
     const flat = flatten(steps)
-  // Merge initialization overrides early so starting procedure uses correct relative_e
-  const initData = { ...default_initial_settings, ...(options?.initialization_data || {}) }
+    // Initialize with device-specific settings (like Python's State.__init__)
+    // For now, only support 'generic' printer (can expand later with registry)
+    const printerName = options?.printer_name || 'generic'
+    let initData: any
+    // Use generic set_up function (matches Python's import_module + set_up pattern)
+    initData = generic_set_up(options?.initialization_data || {})
     // capture starting / ending procedure if provided (like Python passes via import_printer)
     const starting: any[] = initData.starting_procedure_steps || []
     const ending: any[] = initData.ending_procedure_steps || []
@@ -47,20 +50,9 @@ export class State {
     }
     let primerSteps: any[] = []
     if (firstPoint && primerName && primerName !== 'no_primer') {
-      primerSteps = buildPrimer(primerName, firstPoint)
+      primerSteps = buildPrimer(primerName, firstPoint, { enablePrimer: true })
     }
     this.steps = [...starting, ...primerSteps, ...flat, ...ending]
-    // If the first explicit extruder sets relative_gcode false but Python default would emit an initial relative true, inject that for parity
-    const firstExtruderIdx = this.steps.findIndex(s => s instanceof (Extruder as any))
-    const firstPrinterIdx = this.steps.findIndex(s => s instanceof (Printer as any))
-    if (firstExtruderIdx >= 0) {
-      const firstExt = this.steps[firstExtruderIdx] as Extruder
-      if (firstExt.relative_gcode === false) {
-        // Insert relative=true extruder AFTER printer (if printer exists before extruder) else at start
-        const insertIdx = (firstPrinterIdx >= 0 && firstPrinterIdx < firstExtruderIdx) ? firstExtruderIdx : firstExtruderIdx
-        this.steps.splice(insertIdx, 0, new Extruder({ relative_gcode: true }))
-      }
-    }
     // Initialize core printer/extruder/geometry like Python State
     if (!this.printer) {
       this.printer = new Printer({
@@ -83,11 +75,8 @@ export class State {
       this.extruder.update_e_ratio()
       if (initData.manual_e_ratio != null) this.extruder.volume_to_e = initData.manual_e_ratio
       this.extruders.push(this.extruder)
-  // Initialize as undefined so that the first explicit Extruder step always emits its mode line (Python behavior)
-  this._last_mode_emitted = undefined
     } else {
       this.extruder = this.extruders[0]
-  this._last_mode_emitted = undefined
     }
     // Provide an initial geometry (mirrors Python default initialization) if not explicitly present
     const hasGeom = this.steps.some(s => s instanceof (ExtrusionGeometry as any))

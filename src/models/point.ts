@@ -1,4 +1,5 @@
 import { BaseModelPlus } from '../core/base-model.js'
+import { formatCoordinate } from '../util/format.js'
 
 export class Point extends BaseModelPlus {
   x?: number
@@ -14,9 +15,9 @@ export class Point extends BaseModelPlus {
 
   XYZ_gcode(prev: Point) {
     let s = ''
-    if (this.x != null && this.x !== prev.x) s += `X${this.x.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')} `
-    if (this.y != null && this.y !== prev.y) s += `Y${this.y.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')} `
-    if (this.z != null && this.z !== prev.z) s += `Z${this.z.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')} `
+    if (this.x != null && this.x !== prev.x) s += `X${formatCoordinate(this.x)} `
+    if (this.y != null && this.y !== prev.y) s += `Y${formatCoordinate(this.y)} `
+    if (this.z != null && this.z !== prev.z) s += `Z${formatCoordinate(this.z)} `
     return s === '' ? undefined : s
   }
 

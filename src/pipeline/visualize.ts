@@ -21,29 +21,38 @@ export function build_plot_data(state: State): PlotDataLegacy {
 /**
  * Full visualization pipeline matching Python's visualize.steps2visualization.visualize()
  * 
- * @param steps - Array of design steps
+ * @param steps - Array of design steps (NOT flattened, NO primers added - pure user steps)
  * @param plotControls - Visualization controls
  * @param showTips - Whether to show guidance tips
- * @returns PlotData if raw_data=true, otherwise undefined (would trigger plotting in Python)
+ * @returns {plotData, state} - PlotData and a minimal state object
  */
-export function visualize(steps: any[], plotControls: PlotControls, showTips: boolean = true): PlotData | undefined {
+export function visualize(steps: any[], plotControls: PlotControls, showTips: boolean = true): { plotData: PlotData | undefined, state: any } {
   plotControls.initialize()
   
   if (showTips) {
     showVisualizationTips(plotControls)
   }
 
-  // Create state for visualization (similar to gcode state but for visualization)
-  const state = new State(steps, {
-    initialization_data: plotControls.initialization_data,
-    printer_name: plotControls.printer_name
-  })
+  // Create a minimal visualization state (NOT the full gcode State which adds primers etc.)
+  // Matches Python's fullcontrol.visualize.state.State
+  const initData = plotControls.initialization_data || {}
+  const state = {
+    point: new Point(),
+    extruder: { on: true }, // Default on:true for visualization (matches Python)
+    pathCountNow: 0,
+    pointCountNow: 0,
+    pointCountTotal: steps.filter(s => s instanceof Point || s.constructor?.name === 'Point').length,
+    extrusion_geometry: {
+      width: initData.extrusion_width || 0.4,
+      height: initData.extrusion_height || 0.2
+    }
+  }
 
-  // Create plot data using state.steps (which includes primers, starting procedures, etc.)
-  const plotData = new PlotData(state.steps, state)
+  // Create plot data using original steps
+  const plotData = new PlotData(steps, state)
 
-  // Process each step through its visualize method
-  for (const step of state.steps) {
+  // Process each step through its visualize method (original steps, not modified)
+  for (const step of steps) {
     if (step && typeof step.visualize === 'function') {
       step.visualize(state, plotData, plotControls)
     }
@@ -53,12 +62,12 @@ export function visualize(steps: any[], plotControls: PlotControls, showTips: bo
   plotData.cleanup()
 
   if (plotControls.raw_data) {
-    return plotData
+    return { plotData, state }
   } else {
     // In Python, this would call plotly.plot() to render
     // For JS, we just return the data for external rendering
     console.warn('Full plotting not implemented in JS - use raw_data=true to get PlotData')
-    return plotData
+    return { plotData, state }
   }
 }
 

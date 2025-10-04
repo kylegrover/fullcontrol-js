@@ -4,12 +4,21 @@ export class GcodeControls extends BaseModelPlus {
   printer_name?: string
   initialization_data?: Record<string, any>
   save_as?: string
-  include_date?: boolean = true
-  show_banner: boolean = true
-  show_tips: boolean = true
-  silent: boolean = false
+  include_date?: boolean
+  show_banner?: boolean
+  show_tips?: boolean
+  silent?: boolean
   static readonly typeName = 'GcodeControls'
-  constructor(init?: Partial<GcodeControls>) { super(init) }
+  
+  constructor(init?: Partial<GcodeControls>) {
+    super(init)
+    // Set defaults only if not provided (matches Python pydantic behavior)
+    if (this.include_date === undefined) this.include_date = true
+    if (this.show_banner === undefined) this.show_banner = true
+    if (this.show_tips === undefined) this.show_tips = true
+    if (this.silent === undefined) this.silent = false
+  }
+  
   initialize() {
     if (!this.printer_name) {
       this.printer_name = 'generic'
@@ -19,21 +28,36 @@ export class GcodeControls extends BaseModelPlus {
 }
 
 export class PlotControls extends BaseModelPlus {
-  color_type: string = 'z_gradient'
+  color_type?: string
   line_width?: number
   style?: 'tube' | 'line'
-  tube_type: 'flow' | 'cylinders' = 'flow'
-  tube_sides: number = 4
-  zoom: number = 1
-  hide_annotations = false
-  hide_travel = false
-  hide_axes = false
-  neat_for_publishing = false
-  raw_data = false
-  printer_name: string = 'generic'
+  tube_type?: 'flow' | 'cylinders'
+  tube_sides?: number
+  zoom?: number
+  hide_annotations?: boolean
+  hide_travel?: boolean
+  hide_axes?: boolean
+  neat_for_publishing?: boolean
+  raw_data?: boolean
+  printer_name?: string
   initialization_data?: Record<string, any>
   static readonly typeName = 'PlotControls'
-  constructor(init?: Partial<PlotControls>) { super(init) }
+  
+  constructor(init?: Partial<PlotControls>) {
+    super(init)
+    // Set defaults only if not provided (matches Python pydantic behavior)
+    if (this.color_type === undefined) this.color_type = 'z_gradient'
+    if (this.tube_type === undefined) this.tube_type = 'flow'
+    if (this.tube_sides === undefined) this.tube_sides = 4
+    if (this.zoom === undefined) this.zoom = 1
+    if (this.hide_annotations === undefined) this.hide_annotations = false
+    if (this.hide_travel === undefined) this.hide_travel = false
+    if (this.hide_axes === undefined) this.hide_axes = false
+    if (this.neat_for_publishing === undefined) this.neat_for_publishing = false
+    if (this.raw_data === undefined) this.raw_data = false
+    if (this.printer_name === undefined) this.printer_name = 'generic'
+  }
+  
   initialize() {
     if (!this.raw_data) {
       if (!this.style) {

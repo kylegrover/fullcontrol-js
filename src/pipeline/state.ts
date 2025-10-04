@@ -75,7 +75,7 @@ export class State {
         total_volume_ref: 0,
         relative_gcode: initData.relative_e,
         travel_format: initData.travel_format === 'G1_E0' ? 'G1_E0' : 'none',
-        on: false
+        on: true  // Default to on (matches Python visualization behavior; explicit Extruder objects override)
       })
       this.extruder.update_e_ratio()
       if (initData.manual_e_ratio != null) this.extruder.volume_to_e = initData.manual_e_ratio
@@ -100,7 +100,7 @@ export class State {
       if (gstep) { this.extrusion_geometry = gstep; try { gstep.update_area() } catch {} }
     }
     
-    // Initialize visualization tracking
+    // Initialize visualization tracking - count points AFTER all steps are assembled
     this.pointCountTotal = this.countPoints(this.steps)
   }
 

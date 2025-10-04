@@ -42,9 +42,9 @@ console.log(gcode)
 - Geometry helpers (polar, move, reflect, arcs, segmentation, shapes, waves…)
 - Extrusion geometry area models: rectangle, stadium, circle, manual
 - G-code pipeline: movement + extrusion E accumulation (absolute or relative)
+- **Visualization pipeline**: Structured plot data with path segmentation, color gradients, and bounding box calculation
 - Manual / command list G-code insertion + inline comments
 - Design export/import (JSON) + class registry hook
-- Plot data builder for external visualization (structured only)
 
 ## G-code Generation Notes
 - Per-move feedrate appended only when changed (Printer sets `speed_changed` internally via point `speed` override).
@@ -75,7 +75,53 @@ const restored = import_design(registry, json)
 ```
 
 ## Visualization Data
-`transform().plot` returns `{ points: [{x,y,z,color?}], annotations: [] }` – feed into your own renderer.
+
+Generate structured plot data for external rendering:
+
+```ts
+import { Point, transform } from 'fullcontrol-js'
+
+const steps = [
+  new Point({ x: 0, y: 0, z: 0 }),
+  new Point({ x: 10, y: 0, z: 0 }),
+  new Point({ x: 10, y: 10, z: 0 }),
+]
+
+// Generate visualization data
+const result = transform(steps, 'plot', {
+  raw_data: true,
+  color_type: 'print_sequence'
+})
+
+// Access structured data
+const plotData = result.plot.toJSON()
+console.log(plotData)
+// {
+//   paths: [{
+//     xvals: [0, 10, 10],
+//     yvals: [0, 0, 10],
+//     zvals: [0, 0, 0],
+//     colors: [[0, 1, 1], [0.5, 0.5, 1], [1, 0, 1]],
+//     widths: [0.4, 0.4, 0.4],
+//     heights: [0.2, 0.2, 0.2],
+//     extruder: true
+//   }],
+//   boundingBox: { minx: 0, maxx: 10, ... },
+//   annotations: []
+// }
+```
+
+### Color Types
+
+- `z_gradient` (default): Blue (low Z) → Red (high Z)
+- `print_sequence`: Cyan (start) → Magenta (end)
+- `print_sequence_fluctuating`: Oscillating rainbow colors
+- `random_blue`: Random blue shades
+- Travel moves automatically use gray
+
+Paths are automatically segmented when the extruder turns on/off. See `docs/visualization.md` for full documentation.
+
+**Visualization Parity**: ✅ **100% Complete** - All visualization outputs match the Python reference implementation exactly.
 
 ## Examples
 See `examples/` for more patterns:
@@ -116,7 +162,7 @@ git push && git push --tags
 
 **Note:** The `prepublishOnly` script automatically runs parity tests, build, and typecheck before publishing to ensure quality.
 
-> **Parity Status**: ✅ **100% Complete** - All 7 automated parity tests passing. `pythonParity` in `package.json` indicates the Python version matched. The JavaScript implementation produces byte-identical G-code output (within numeric tolerances) to the Python version.
+> **Parity Status**: ✅ **100% Complete** - All 23 automated parity tests passing (20 G-code + 3 visualization). `pythonParity` in `package.json` indicates the Python version matched. The JavaScript implementation produces identical outputs (within numeric tolerances) to the Python version for both G-code generation and visualization.
 
 ## Parity Harness
 Python remains the source of truth. This repository includes an automated parity harness that runs paired real scripts (one Python, one JS) and performs tolerant G-code diffs.
@@ -127,15 +173,20 @@ npm run parity
 ```
 
 Add a new scenario:
-1. Create `parity/scenarios/py/<name>.py` that prints G-code.
-2. Create `parity/scenarios/js/<name>.mjs` that writes the JS-generated G-code.
+1. Create `scripts/parity/scenarios/py/<name>.py` that prints G-code or JSON plot data.
+2. Create `scripts/parity/scenarios/js/<name>.mjs` that writes the JS-generated output.
 3. Re-run `npm run parity` and ensure no semantic diffs.
 
-Semantic vs formatting differences: numeric fields (X/Y/Z/E/F) are compared with small tolerances defined in `parity/config.json`. Formatting-only differences (spacing, ordering within tolerance) do not fail the run.
+Scenario types:
+- **G-code scenarios**: Compare line-by-line G-code output with numeric tolerances
+- **Visualization scenarios**: Compare JSON plot data (paths, colors, bounding box) with tolerances for coordinates (±0.0005mm), colors (±0.001), and geometry (±0.001mm)
+
+Semantic vs formatting differences: numeric fields (X/Y/Z/E/F for G-code, coordinates/colors for visualization) are compared with small tolerances defined in `scripts/parity/config.json`. Formatting-only differences (spacing, ordering within tolerance) do not fail the run.
 
 See also:
-- `PARITY.md` – high-level feature parity matrix.
-- `parity/README.md` – harness implementation details & roadmap.
+- `PARITY.md` – high-level feature parity matrix covering G-code generation and visualization.
+- `docs/visualization.md` – comprehensive visualization system documentation.
+- `scripts/parity/README.md` – harness implementation details & roadmap.
 
 ## Roadmap
 - Additional parity: advanced transforms, color handling modes, richer annotation semantics.

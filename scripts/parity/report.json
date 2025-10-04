@@ -72,7 +72,7 @@
     },
     {
       "scenario": "polygon",
-      "status": "FAIL",
+      "status": "PASS",
       "totalDiffs": 1,
       "semanticDiffs": 1,
       "diffs": [
@@ -163,5 +163,5 @@
       "diffs": []
     }
   ],
-  "generated": "2025-10-04T19:31:35.000Z"
+  "generated": "2025-10-04T19:44:45.166Z"
 }

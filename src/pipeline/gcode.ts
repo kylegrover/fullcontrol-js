@@ -4,6 +4,7 @@ import { Extruder, ExtrusionGeometry, StationaryExtrusion, Retraction, Unretract
 import { Printer } from '../models/printer.js'
 import { ManualGcode, GcodeComment, PrinterCommand, GcodeStateLike } from '../models/commands.js'
 import { GcodeControls } from '../models/controls.js'
+import { Fan, Hotend, Buildplate } from '../models/auxiliary.js'
 
 export function generate_gcode(state: State, controls?: Partial<GcodeControls>) {
   const gstate: GcodeStateLike = { printer: state.printer || new Printer(), gcode: state.gcodeLines }
@@ -126,6 +127,30 @@ export function generate_gcode(state: State, controls?: Partial<GcodeControls>) 
         if (cmd) out = cmd
       }
       if (out) state.addGcode(out)
+      continue
+    }
+    // Fan control
+    if (step instanceof Fan) {
+      const out = step.gcode()
+      if (out) state.addGcode(out + ' ; set fan speed')
+      continue
+    }
+    // Hotend temperature
+    if (step instanceof Hotend) {
+      const out = step.gcode()
+      if (out) {
+        const comment = step.wait ? ' ; set hotend temp and wait' : ' ; set hotend temp and continue'
+        state.addGcode(out + comment)
+      }
+      continue
+    }
+    // Buildplate temperature
+    if (step instanceof Buildplate) {
+      const out = step.gcode()
+      if (out) {
+        const comment = step.wait ? ' ; set bed temp and wait' : ' ; set bed temp and continue'
+        state.addGcode(out + comment)
+      }
       continue
     }
     // Unknown: ignore for now (future geometry containers, etc.)

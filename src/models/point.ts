@@ -15,9 +15,16 @@ export class Point extends BaseModelPlus {
 
   XYZ_gcode(prev: Point) {
     let s = ''
-    if (this.x != null && this.x !== prev.x) s += `X${formatCoordinate(this.x)} `
-    if (this.y != null && this.y !== prev.y) s += `Y${formatCoordinate(this.y)} `
-    if (this.z != null && this.z !== prev.z) s += `Z${formatCoordinate(this.z)} `
+    // Omit coordinates that haven't changed from the previous point
+    // Uses epsilon comparison (1e-10) to handle floating point precision:
+    // - Catches coordinates that are mathematically equal but differ at bit level
+    // - More aggressive optimization than Python's direct != comparison
+    // - Produces smaller G-code files while maintaining identical toolpaths
+    // See: scripts/parity/KNOWN_DIFFERENCES.md for details
+    const eps = 1e-10
+    if (this.x != null && (prev.x == null || Math.abs(this.x - prev.x) > eps)) s += `X${formatCoordinate(this.x)} `
+    if (this.y != null && (prev.y == null || Math.abs(this.y - prev.y) > eps)) s += `Y${formatCoordinate(this.y)} `
+    if (this.z != null && (prev.z == null || Math.abs(this.z - prev.z) > eps)) s += `Z${formatCoordinate(this.z)} `
     return s === '' ? undefined : s
   }
 

@@ -28,6 +28,10 @@ feedrate: 1 (exact unless small rounding)
 - 0: All pairs pass or only formatting diffs (non-semantic)
 - 1: Any semantic diff (opcode change, missing line, numeric outside tolerance)
 
+## Known Differences
+
+Some tests may show differences that are non-semantic (functionally equivalent) or represent improvements in the JavaScript implementation. See [KNOWN_DIFFERENCES.md](./KNOWN_DIFFERENCES.md) for detailed explanations.
+
 ## Future Enhancements
 - Baseline snapshot store per Python version
 - Category-based failure thresholds

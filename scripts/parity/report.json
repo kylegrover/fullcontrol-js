@@ -16,72 +16,10 @@
     },
     {
       "scenario": "combined_state_changes",
-      "status": "FAIL",
-      "totalDiffs": 6,
-      "semanticDiffs": 6,
-      "diffs": [
-        {
-          "line": 3,
-          "type": "OPCODE_MISMATCH",
-          "py": "M106 S191 ; set fan speed",
-          "js": "G1 F1500 X40 E0.51969"
-        },
-        {
-          "line": 4,
-          "type": "NUMERIC_DIFF",
-          "py": "G1 F1500 X40 E0.51969",
-          "js": "G1 F2500 X50 E0.51969",
-          "numericIssues": [],
-          "toleranceIssues": [
-            {
-              "param": "F",
-              "py": 1500,
-              "js": 2500,
-              "delta": 1000,
-              "tol": 1
-            },
-            {
-              "param": "X",
-              "py": 40,
-              "js": 50,
-              "delta": 10,
-              "tol": 0.0005
-            }
-          ]
-        },
-        {
-          "line": 5,
-          "type": "OPCODE_MISMATCH",
-          "py": "M104 S215 ; set hotend temp and continue",
-          "js": "G0 F8000 X60"
-        },
-        {
-          "line": 6,
-          "type": "NUMERIC_DIFF",
-          "py": "G1 F2500 X50 E0.51969",
-          "js": "G1 F2500 X70 E0.51969",
-          "numericIssues": [],
-          "toleranceIssues": [
-            {
-              "param": "X",
-              "py": 50,
-              "js": 70,
-              "delta": 20,
-              "tol": 0.0005
-            }
-          ]
-        },
-        {
-          "line": 7,
-          "type": "MISSING_JS",
-          "py": "G0 F8000 X60"
-        },
-        {
-          "line": 8,
-          "type": "MISSING_JS",
-          "py": "G1 F2500 X70 E0.51969"
-        }
-      ]
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
     },
     {
       "scenario": "extrusion_settings",
@@ -92,81 +30,10 @@
     },
     {
       "scenario": "fan_temp_control",
-      "status": "FAIL",
-      "totalDiffs": 8,
-      "semanticDiffs": 8,
-      "diffs": [
-        {
-          "line": 3,
-          "type": "OPCODE_MISMATCH",
-          "py": "M106 S127 ; set fan speed",
-          "js": "G1 F1000 X40 E0.332601"
-        },
-        {
-          "line": 4,
-          "type": "NUMERIC_DIFF",
-          "py": "G1 F1000 X40 E0.332601",
-          "js": "G1 X50 E0.332601",
-          "numericIssues": [
-            {
-              "param": "F",
-              "reason": "missing",
-              "py": 1000
-            }
-          ],
-          "toleranceIssues": [
-            {
-              "param": "X",
-              "py": 40,
-              "js": 50,
-              "delta": 10,
-              "tol": 0.0005
-            }
-          ]
-        },
-        {
-          "line": 5,
-          "type": "OPCODE_MISMATCH",
-          "py": "M104 S205 ; set hotend temp and continue",
-          "js": "G1 X60 E0.332601"
-        },
-        {
-          "line": 6,
-          "type": "NUMERIC_DIFF",
-          "py": "G1 X50 E0.332601",
-          "js": "G1 X70 E0.332601",
-          "numericIssues": [],
-          "toleranceIssues": [
-            {
-              "param": "X",
-              "py": 50,
-              "js": 70,
-              "delta": 20,
-              "tol": 0.0005
-            }
-          ]
-        },
-        {
-          "line": 7,
-          "type": "MISSING_JS",
-          "py": "M106 S255 ; set fan speed"
-        },
-        {
-          "line": 8,
-          "type": "MISSING_JS",
-          "py": "G1 X60 E0.332601"
-        },
-        {
-          "line": 9,
-          "type": "MISSING_JS",
-          "py": "M140 S80 ; set bed temp and continue"
-        },
-        {
-          "line": 10,
-          "type": "MISSING_JS",
-          "py": "G1 X70 E0.332601"
-        }
-      ]
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
     },
     {
       "scenario": "helix",
@@ -177,46 +44,15 @@
     },
     {
       "scenario": "initialization_data",
-      "status": "FAIL",
-      "totalDiffs": 7,
-      "semanticDiffs": 7,
+      "status": "WARN",
+      "totalDiffs": 1,
+      "semanticDiffs": 0,
       "diffs": [
         {
-          "line": 2,
-          "type": "OPCODE_MISMATCH",
-          "py": "M140 S80 ; set bed temp and continue",
-          "js": "G0 F4000 X30 Y30 Z0.2"
-        },
-        {
-          "line": 3,
-          "type": "OPCODE_MISMATCH",
-          "py": "M104 S280 ; set hotend temp and continue",
-          "js": "G1 F2000 X60 E0.997804"
-        },
-        {
-          "line": 4,
-          "type": "MISSING_JS",
-          "py": "M190 S80 ; set bed temp and wait"
-        },
-        {
           "line": 5,
-          "type": "MISSING_JS",
-          "py": "M109 S280  ; set hotend temp and wait"
-        },
-        {
-          "line": 6,
-          "type": "MISSING_JS",
-          "py": "M106 S102 ; set fan speed"
-        },
-        {
-          "line": 7,
-          "type": "MISSING_JS",
-          "py": "G0 F4000 X30 Y30 Z0.2"
-        },
-        {
-          "line": 8,
-          "type": "MISSING_JS",
-          "py": "G1 F2000 X60 E0.997804"
+          "type": "FORMAT_DIFF",
+          "py": "M109 S280  ; set hotend temp and wait",
+          "js": "M109 S280 ; set hotend temp and wait"
         }
       ]
     },
@@ -241,15 +77,15 @@
       "semanticDiffs": 1,
       "diffs": [
         {
-          "line": 7,
+          "line": 4,
           "type": "NUMERIC_DIFF",
-          "py": "G1 X55 E0.332601",
-          "js": "G1 X55 Y58.660254 E0.332601",
+          "py": "G1 X45 Y41.339746 E0.332601",
+          "js": "G1 X45 E0.332601",
           "numericIssues": [
             {
               "param": "Y",
               "reason": "missing",
-              "js": 58.660254
+              "py": 41.339746
             }
           ],
           "toleranceIssues": []
@@ -327,5 +163,5 @@
       "diffs": []
     }
   ],
-  "generated": "2025-10-03T21:50:06.977Z"
+  "generated": "2025-10-04T06:54:43.192Z"
 }

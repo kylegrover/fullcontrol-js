@@ -29,11 +29,14 @@ export class Hotend extends BaseModelPlus {
 
 export class Fan extends BaseModelPlus {
   static readonly typeName = 'Fan'
-  speed_percent: number = 0
+  speed_percent?: number
   part_fan_index?: number // future multi-fan
-  constructor(init?: Partial<Fan>) { super(init) }
+  constructor(init?: Partial<Fan>) { 
+    super(init)
+  }
   gcode() {
-    const s = Math.round(Math.max(0, Math.min(100, this.speed_percent)) * 255 / 100)
+    if (this.speed_percent == null) this.speed_percent = 0
+    const s = Math.floor(Math.max(0, Math.min(100, this.speed_percent)) * 255 / 100)
     return this.speed_percent > 0 ? `M106 S${s}` : 'M107'
   }
 }

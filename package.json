@@ -1,9 +1,9 @@
 {
   "name": "fullcontrol-js",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.2-rc.2",
   "description": "FullControl TypeScript rewrite - API parity mirror of Python library (G-code generation & geometry)",
   "license": "GPL-3.0",
-  "pythonParity": "v0.1.2-2-gd818d78 (commit d818d78, all 7 parity tests passing)",
+  "pythonParity": "v0.1.2-2-gd818d78 (commit d818d78)",
   "type": "module",
   "sideEffects": false,
   "exports": {

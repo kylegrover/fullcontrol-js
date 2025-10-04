@@ -64,7 +64,13 @@ export function export_design(steps: any[], filename?: string): string {
   if (filename) {
     // browser-safe: user handles download; node: write file lazily (dynamic import to avoid fs in browser bundles)
     if (typeof window === 'undefined') {
-      import('node:fs').then(fs => fs.writeFileSync(filename + '.json', json))
+      try {
+        // Dynamic import with eval to prevent bundlers from including fs
+        const importFs = new Function('return import("node:fs")')
+        importFs().then((fs: any) => fs.writeFileSync(filename + '.json', json)).catch(() => {})
+      } catch {
+        // Silently fail if fs is not available
+      }
     }
   }
   return json
@@ -77,10 +83,11 @@ export function import_design(registry: Record<string, any>, jsonOrFilename: str
     if (typeof window !== 'undefined') {
       throw new Error('File system import not available in browser context')
     }
-    // Dynamic require to avoid bundler issues
+    // Dynamic require using Function to avoid bundler resolution
     let fs: any
     try {
-      fs = require('node:fs')
+      const requireFs = new Function('return require("node:fs")')
+      fs = requireFs()
     } catch {
       throw new Error('File system module not available')
     }

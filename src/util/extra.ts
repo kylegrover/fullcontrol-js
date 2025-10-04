@@ -73,8 +73,17 @@ export function export_design(steps: any[], filename?: string): string {
 export function import_design(registry: Record<string, any>, jsonOrFilename: string): any[] {
   let jsonStr = jsonOrFilename
   if (jsonOrFilename.endsWith('.json')) {
-    if (typeof window !== 'undefined') throw new Error('File system import not available in browser context')
-    const fs = require('node:fs')
+    // File system access only available in Node.js, not in browser
+    if (typeof window !== 'undefined') {
+      throw new Error('File system import not available in browser context')
+    }
+    // Dynamic require to avoid bundler issues
+    let fs: any
+    try {
+      fs = require('node:fs')
+    } catch {
+      throw new Error('File system module not available')
+    }
     jsonStr = fs.readFileSync(jsonOrFilename, 'utf-8')
   }
   const arr = JSON.parse(jsonStr)

@@ -19,8 +19,6 @@ import * as toolchanger_T2 from './toolchanger_T2.js'
 import * as toolchanger_T3 from './toolchanger_T3.js'
 import * as raise3d_pro2_nozzle1 from './raise3d_pro2_nozzle1.js'
 import * as ultimaker2plus from './ultimaker2plus.js'
-import fs from 'fs'
-import path from 'path'
 
 export interface ImportPrinterResult {
   starting_procedure_steps: any[]
@@ -40,13 +38,9 @@ function substitute(text: string, data: Record<string, any>) {
 }
 
 function loadLibraryMap(library: string): Record<string,string> {
-  try {
-    const rel = path.resolve(process.cwd(), `fullcontrol-py/fullcontrol/devices/${library}/library.json`)
-    if (fs.existsSync(rel)) {
-      const raw = fs.readFileSync(rel,'utf-8')
-      return JSON.parse(raw)
-    }
-  } catch {}
+  // Library mapping is optional - used to map display names to module slugs
+  // In Node.js environments, this could load from Python's library.json files
+  // For browser compatibility, we skip file system access and rely on slug normalization
   return {}
 }
 

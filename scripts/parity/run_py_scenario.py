@@ -26,6 +26,16 @@ if proc.returncode != 0:
 raw = proc.stdout
 lines = [ln.rstrip() for ln in raw.splitlines() if ln.strip()]
 
+# Check if this is a visualization test (starts with viz_)
+if scenario.startswith('viz_'):
+    # Visualization tests output JSON directly
+    try:
+        plot_data = json.loads(raw)
+        print(json.dumps({ 'scenario': scenario, 'plot_data': plot_data }))
+    except json.JSONDecodeError as e:
+        print(json.dumps({ 'scenario': scenario, 'error': f'JSON parse error: {str(e)}' }))
+    sys.exit(0)
+
 # A conservative G-code line detector: starts with comment ';' or an uppercase letter followed by digit (e.g., G1, M82, T0),
 # or begins with a known command letter alone. Everything else is advisory text we drop for parity.
 gcodelike = re.compile(r'^(;|[GMTFSXYZEIJKRABP][0-9]|M8|G0|G1)')

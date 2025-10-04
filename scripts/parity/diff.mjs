@@ -9,6 +9,108 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)))
 const config = JSON.parse(fs.readFileSync(path.join(root, 'config.json'), 'utf-8'))
 const { coordinate, extrusion, feedrate } = config.tolerances
 
+/**
+ * Compare visualization plot data (for viz_* scenarios)
+ */
+function comparePlotData(pyData, jsData) {
+  const diffs = []
+  const colorTolerance = 0.001 // tolerance for RGB values (0-1 scale)
+  const coordTolerance = coordinate // reuse coordinate tolerance for xyz
+  const geomTolerance = 0.001 // tolerance for width/height
+
+  // Compare bounding boxes
+  const bbFields = ['minx', 'maxx', 'midx', 'rangex', 'miny', 'maxy', 'midy', 'rangey', 'minz', 'maxz', 'midz', 'rangez']
+  for (const field of bbFields) {
+    const pyVal = pyData.boundingBox?.[field]
+    const jsVal = jsData.boundingBox?.[field]
+    if (pyVal == null && jsVal == null) continue
+    if (pyVal == null || jsVal == null) {
+      diffs.push({ type: 'BOUNDING_BOX', field, reason: 'missing', py: pyVal, js: jsVal })
+      continue
+    }
+    const delta = Math.abs(pyVal - jsVal)
+    if (delta > coordTolerance) {
+      diffs.push({ type: 'BOUNDING_BOX', field, py: pyVal, js: jsVal, delta, tolerance: coordTolerance })
+    }
+  }
+
+  // Compare number of paths
+  const pyPaths = pyData.paths || []
+  const jsPaths = jsData.paths || []
+  if (pyPaths.length !== jsPaths.length) {
+    diffs.push({ type: 'PATH_COUNT', py: pyPaths.length, js: jsPaths.length })
+    return diffs // Can't continue if path counts differ
+  }
+
+  // Compare each path
+  for (let i = 0; i < pyPaths.length; i++) {
+    const pyPath = pyPaths[i]
+    const jsPath = jsPaths[i]
+
+    // Check extruder state
+    if (pyPath.extruder?.on !== jsPath.extruder?.on) {
+      diffs.push({ type: 'PATH_EXTRUDER', pathIndex: i, py: pyPath.extruder?.on, js: jsPath.extruder?.on })
+    }
+
+    // Check array lengths
+    const arrays = ['xvals', 'yvals', 'zvals', 'colors', 'widths', 'heights']
+    for (const arr of arrays) {
+      if (pyPath[arr]?.length !== jsPath[arr]?.length) {
+        diffs.push({ type: 'PATH_ARRAY_LENGTH', pathIndex: i, array: arr, py: pyPath[arr]?.length, js: jsPath[arr]?.length })
+      }
+    }
+
+    // Compare point values
+    const pointCount = Math.min(pyPath.xvals?.length || 0, jsPath.xvals?.length || 0)
+    for (let j = 0; j < pointCount; j++) {
+      // Compare coordinates
+      for (const coord of ['xvals', 'yvals', 'zvals']) {
+        const pyVal = pyPath[coord]?.[j]
+        const jsVal = jsPath[coord]?.[j]
+        if (pyVal != null && jsVal != null) {
+          const delta = Math.abs(pyVal - jsVal)
+          if (delta > coordTolerance) {
+            diffs.push({ type: 'PATH_COORD', pathIndex: i, pointIndex: j, coord, py: pyVal, js: jsVal, delta, tolerance: coordTolerance })
+          }
+        }
+      }
+
+      // Compare colors (RGB arrays)
+      const pyColor = pyPath.colors?.[j]
+      const jsColor = jsPath.colors?.[j]
+      if (pyColor && jsColor) {
+        for (let c = 0; c < 3; c++) {
+          const delta = Math.abs(pyColor[c] - jsColor[c])
+          if (delta > colorTolerance) {
+            diffs.push({ type: 'PATH_COLOR', pathIndex: i, pointIndex: j, channel: ['r', 'g', 'b'][c], py: pyColor[c], js: jsColor[c], delta, tolerance: colorTolerance })
+          }
+        }
+      }
+
+      // Compare geometry (widths, heights)
+      for (const geom of ['widths', 'heights']) {
+        const pyVal = pyPath[geom]?.[j]
+        const jsVal = jsPath[geom]?.[j]
+        if (pyVal != null && jsVal != null) {
+          const delta = Math.abs(pyVal - jsVal)
+          if (delta > geomTolerance) {
+            diffs.push({ type: 'PATH_GEOMETRY', pathIndex: i, pointIndex: j, field: geom, py: pyVal, js: jsVal, delta, tolerance: geomTolerance })
+          }
+        }
+      }
+    }
+  }
+
+  // Compare annotations
+  const pyAnnotations = pyData.annotations || []
+  const jsAnnotations = jsData.annotations || []
+  if (pyAnnotations.length !== jsAnnotations.length) {
+    diffs.push({ type: 'ANNOTATION_COUNT', py: pyAnnotations.length, js: jsAnnotations.length })
+  }
+
+  return diffs
+}
+
 // Known acceptable differences - JS implementation is correct/better
 // Returns true if the diffs match a known acceptable pattern
 function isKnownAcceptable(scenario, diffs){
@@ -128,6 +230,31 @@ for(const n of names){
     fail++
     continue
   }
+  
+  // Handle visualization scenarios differently
+  if(n.startsWith('viz_')){
+    if(!py.plot_data || !js.plot_data){
+      summary.push({ scenario:n, status:'ERROR', message:'Missing plot_data', pyRaw:py, jsRaw:js })
+      fail++
+      continue
+    }
+    const diffs = comparePlotData(py.plot_data, js.plot_data)
+    if(debugTargets.includes(n)){
+      const dumpDir = path.join(root,'debug')
+      if(!fs.existsSync(dumpDir)) fs.mkdirSync(dumpDir)
+      fs.writeFileSync(path.join(dumpDir, `${n}-py.json`), JSON.stringify(py.plot_data, null, 2))
+      fs.writeFileSync(path.join(dumpDir, `${n}-js.json`), JSON.stringify(js.plot_data, null, 2))
+      fs.writeFileSync(path.join(dumpDir, `${n}-diffs.json`), JSON.stringify(diffs, null, 2))
+    }
+    const status = diffs.length === 0 ? 'PASS' : 'FAIL'
+    if(status === 'FAIL') fail++
+    summary.push({ scenario:n, status, totalDiffs: diffs.length, diffs })
+    const line = `${n}: ${status} (diffs=${diffs.length})`
+    console.log(line)
+    continue
+  }
+  
+  // Handle gcode scenarios (original logic)
   if(!Array.isArray(py.lines) || !Array.isArray(js.lines)){
     summary.push({ scenario:n, status:'ERROR', pyRaw:py, jsRaw:js })
     fail++

@@ -6,8 +6,15 @@ export class PlotAnnotation extends BaseModelPlus {
   label?: string
   static readonly typeName = 'PlotAnnotation'
   constructor(init?: Partial<PlotAnnotation>) { super(init) }
-  visualize(state: any, plot_data: any, _plot_controls: any) {
-    if (!this.point) this.point = new Point({ x: state.point.x, y: state.point.y, z: state.point.z })
-    if (plot_data?.add_annotation) plot_data.add_annotation(this)
+  
+  /**
+   * Visualization method for PlotAnnotation
+   * Matches Python: fullcontrol.visualize.annotations.PlotAnnotation.visualize()
+   */
+  visualize(state: any, plotData: any, _plotControls: any): void {
+    if (!this.point) {
+      this.point = new Point({ x: state.point.x, y: state.point.y, z: state.point.z })
+    }
+    plotData.addAnnotation(this)
   }
 }

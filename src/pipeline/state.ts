@@ -25,6 +25,11 @@ export class State {
   point: Point = new Point()
   extruder!: Extruder // will assign during init (first extruder)
   extrusion_geometry!: ExtrusionGeometry
+  
+  // Visualization tracking (matches Python visualize/state.py)
+  pathCountNow: number = 0
+  pointCountNow: number = 0
+  pointCountTotal: number = 0
 
   constructor(steps: Step[] = [], options?: { initialization_data?: any; printer_name?: string }) {
     // Flatten user steps first
@@ -94,6 +99,17 @@ export class State {
       const gstep = this.steps.find(s => s instanceof (ExtrusionGeometry as any)) as ExtrusionGeometry | undefined
       if (gstep) { this.extrusion_geometry = gstep; try { gstep.update_area() } catch {} }
     }
+    
+    // Initialize visualization tracking
+    this.pointCountTotal = this.countPoints(this.steps)
+  }
+
+  /**
+   * Count total Point instances in steps (for visualization progress tracking)
+   * Matches Python: State.count_points(steps)
+   */
+  countPoints(steps: Step[]): number {
+    return steps.filter(step => step instanceof Point || step.constructor?.name === 'Point').length
   }
 
   addPoint(p: Point) {

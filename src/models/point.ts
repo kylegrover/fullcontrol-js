@@ -1,5 +1,6 @@
 import { BaseModelPlus } from '../core/base-model.js'
 import { formatCoordinate } from '../util/format.js'
+import { calculateColor, type RGBColor } from '../pipeline/visualization-colors.js'
 
 export class Point extends BaseModelPlus {
   x?: number
@@ -46,5 +47,63 @@ export class Point extends BaseModelPlus {
     state.point.updateFrom(this)
     if (isFirst) state._first_movement_done = true
     return line
+  }
+
+  /**
+   * Visualization method - processes a Point for plot data
+   * Matches Python: fullcontrol.visualize.point.Point.visualize()
+   */
+  visualize(state: any, plotData: any, plotControls: any): void {
+    let changeCheck = false
+    const precisionXYZ = 3 // number of decimal places for xyz values in plot_data
+
+    // Update state point coordinates if they've changed
+    if (this.x != null && this.x !== state.point.x) {
+      state.point.x = Math.round(this.x * 1000) / 1000 // round to precisionXYZ
+      changeCheck = true
+    }
+    if (this.y != null && this.y !== state.point.y) {
+      state.point.y = Math.round(this.y * 1000) / 1000
+      changeCheck = true
+    }
+    if (this.z != null && this.z !== state.point.z) {
+      state.point.z = Math.round(this.z * 1000) / 1000
+      changeCheck = true
+    }
+    if (this.color != null && this.color !== state.point.color) {
+      state.point.color = this.color
+      changeCheck = true
+    }
+
+    if (changeCheck) {
+      this.updateColor(state, plotData, plotControls)
+      plotData.paths[plotData.paths.length - 1].addPoint(state)
+      state.pointCountNow += 1
+    }
+  }
+
+  /**
+   * Update color based on color_type setting
+   * Matches Python: fullcontrol.visualize.point.Point.update_color()
+   */
+  updateColor(state: any, plotData: any, plotControls: any): void {
+    const colorType = plotControls.color_type || 'z_gradient'
+
+    if (colorType === 'manual') {
+      // Keep existing color (don't override)
+      if (!state.point.color) {
+        state.point.color = [0, 0, 1] // default blue
+      }
+    } else {
+      state.point.color = calculateColor(
+        colorType,
+        state.extruder.on,
+        state.point.color,
+        state.point.z,
+        plotData.boundingBox,
+        state.pointCountNow,
+        state.pointCountTotal
+      )
+    }
   }
 }

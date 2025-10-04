@@ -40,6 +40,19 @@ if(res.status !== 0){
   process.exit(0)
 }
 const raw = res.stdout
+
+// Check if this is a visualization test (starts with viz_)
+if(scenario.startsWith('viz_')){
+  // Visualization tests output JSON directly
+  try {
+    const plotData = JSON.parse(raw)
+    process.stdout.write(JSON.stringify({ scenario, plot_data: plotData }))
+  } catch(e) {
+    process.stdout.write(JSON.stringify({ scenario, error: 'JSON parse error: ' + e.message }))
+  }
+  process.exit(0)
+}
+
 const lines = raw.split(/\r?\n/).map(l=> l.replace(/\s+$/,'')).filter(l=> l.trim().length)
 const norm = []
 for(const ln of lines){

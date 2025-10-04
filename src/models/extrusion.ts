@@ -26,6 +26,40 @@ export class ExtrusionGeometry extends BaseModelPlus {
     }
     return undefined
   }
+
+  /**
+   * Visualization method for ExtrusionGeometry
+   * Matches Python: fullcontrol.visualize.extrusion_classes.ExtrusionGeometry.visualize()
+   */
+  visualize(state: any, _plotData: any, _plotControls: any): void {
+    // Priority: explicit width/height > diameter > area
+    // If both width and height are explicitly set, use them and ignore area/diameter
+    if (this.width != null && this.height != null) {
+      if (this.width !== state.extrusion_geometry.width) {
+        state.extrusion_geometry.width = Math.round(this.width * 1000) / 1000 // 3 decimals
+      }
+      if (this.height !== state.extrusion_geometry.height) {
+        state.extrusion_geometry.height = Math.round(this.height * 1000) / 1000
+      }
+    } else if (this.diameter != null) {
+      // Diameter sets both width and height
+      state.extrusion_geometry.width = Math.round(this.diameter * 1000) / 1000
+      state.extrusion_geometry.height = Math.round(this.diameter * 1000) / 1000
+    } else if (this.area != null) {
+      // Area calculates equivalent diameter
+      const dia = 2 * Math.sqrt(this.area / Math.PI)
+      state.extrusion_geometry.width = Math.round(dia * 1000) / 1000
+      state.extrusion_geometry.height = Math.round(dia * 1000) / 1000
+    } else {
+      // Only width or only height set
+      if (this.width != null && this.width !== state.extrusion_geometry.width) {
+        state.extrusion_geometry.width = Math.round(this.width * 1000) / 1000
+      }
+      if (this.height != null && this.height !== state.extrusion_geometry.height) {
+        state.extrusion_geometry.height = Math.round(this.height * 1000) / 1000
+      }
+    }
+  }
 }
 
 export class StationaryExtrusion extends BaseModelPlus {
@@ -108,6 +142,30 @@ export class Extruder extends BaseModelPlus {
       return state.extruder.relative_gcode ? 'M83 ; relative extrusion' : 'M82 ; absolute extrusion\nG92 E0 ; reset extrusion position to zero'
     }
     return undefined
+  }
+
+  /**
+   * Visualization method for Extruder
+   * Matches Python: fullcontrol.visualize.extrusion_classes.Extruder.visualize()
+   */
+  visualize(state: any, plotData: any, plotControls: any): void {
+    if (this.on != null && this.on !== state.extruder.on) {
+      state.extruder.on = this.on
+      
+      // If current path has more than one point (a line is already plotted), add new path
+      // Otherwise just change the extruder state of the current path
+      const currentPath = plotData.paths[plotData.paths.length - 1]
+      if (currentPath.xvals.length > 1) {
+        plotData.addPath(state, plotData, plotControls)
+        state.pathCountNow += 1
+      } else {
+        currentPath.extruder.on = this.on
+        state.point.updateColor(state, plotData, plotControls)
+        if (currentPath.colors.length > 0) {
+          currentPath.colors[currentPath.colors.length - 1] = state.point.color
+        }
+      }
+    }
   }
 }
 

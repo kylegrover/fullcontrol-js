@@ -1,167 +1,68 @@
 {
   "summary": [
     {
-      "scenario": "arc",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "basic_line",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "combined_state_changes",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "extrusion_settings",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "fan_temp_control",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "helix",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "initialization_data",
-      "status": "WARN",
-      "totalDiffs": 1,
-      "semanticDiffs": 0,
+      "scenario": "viz_square_sequence",
+      "status": "FAIL",
+      "totalDiffs": 5,
       "diffs": [
         {
-          "line": 5,
-          "type": "FORMAT_DIFF",
-          "py": "M109 S280  ; set hotend temp and wait",
-          "js": "M109 S280 ; set hotend temp and wait"
+          "type": "PATH_COLOR",
+          "pathIndex": 0,
+          "pointIndex": 0,
+          "channel": "r",
+          "py": 0.8,
+          "js": 0,
+          "delta": 0.8,
+          "tolerance": 0.001
+        },
+        {
+          "type": "PATH_COLOR",
+          "pathIndex": 0,
+          "pointIndex": 1,
+          "channel": "r",
+          "py": 0.48,
+          "js": 0,
+          "delta": 0.48,
+          "tolerance": 0.001
+        },
+        {
+          "type": "PATH_COLOR",
+          "pathIndex": 0,
+          "pointIndex": 2,
+          "channel": "r",
+          "py": 0.16,
+          "js": 0,
+          "delta": 0.16,
+          "tolerance": 0.001
+        },
+        {
+          "type": "PATH_COLOR",
+          "pathIndex": 0,
+          "pointIndex": 3,
+          "channel": "g",
+          "py": 0.2,
+          "js": 0,
+          "delta": 0.2,
+          "tolerance": 0.001
+        },
+        {
+          "type": "PATH_COLOR",
+          "pathIndex": 0,
+          "pointIndex": 4,
+          "channel": "g",
+          "py": 0.6,
+          "js": 0,
+          "delta": 0.6,
+          "tolerance": 0.001
         }
       ]
     },
     {
-      "scenario": "manual_gcode",
+      "scenario": "viz_travel_paths",
       "status": "PASS",
       "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "midpoint_polar",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "polygon",
-      "status": "PASS",
-      "totalDiffs": 1,
-      "semanticDiffs": 1,
-      "diffs": [
-        {
-          "line": 4,
-          "type": "NUMERIC_DIFF",
-          "py": "G1 X45 Y41.339746 E0.332601",
-          "js": "G1 X45 E0.332601",
-          "numericIssues": [
-            {
-              "param": "Y",
-              "reason": "missing",
-              "py": 41.339746
-            }
-          ],
-          "toleranceIssues": []
-        }
-      ]
-    },
-    {
-      "scenario": "rectangle_perimeter",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "relative_two_segment",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "retraction",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "speed_changes",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "spiral_simple",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "square",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "stationary_extrusion",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "travel_between_extrusions",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "variable_arc",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
-      "diffs": []
-    },
-    {
-      "scenario": "varying_geometry",
-      "status": "PASS",
-      "totalDiffs": 0,
-      "semanticDiffs": 0,
       "diffs": []
     }
   ],
-  "generated": "2025-10-04T20:00:00.381Z"
+  "generated": "2025-10-04T20:28:32.557Z"
 }

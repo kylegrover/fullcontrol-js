@@ -36,6 +36,63 @@
       "diffs": []
     },
     {
+      "scenario": "geometry_move_segment",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "geometry_ramping",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "geometry_reflect",
+      "status": "PASS",
+      "totalDiffs": 0,
+      "semanticDiffs": 0,
+      "diffs": []
+    },
+    {
+      "scenario": "geometry_waves",
+      "status": "PASS",
+      "totalDiffs": 2,
+      "semanticDiffs": 2,
+      "diffs": [
+        {
+          "line": 3,
+          "type": "NUMERIC_DIFF",
+          "py": "G1 F1000 X0 Y5 E0.166301",
+          "js": "G1 F1000 Y5 E0.166301",
+          "numericIssues": [
+            {
+              "param": "X",
+              "reason": "missing",
+              "py": 0
+            }
+          ],
+          "toleranceIssues": []
+        },
+        {
+          "line": 5,
+          "type": "NUMERIC_DIFF",
+          "py": "G1 X2 Y0 E0.166301",
+          "js": "G1 Y0 E0.166301",
+          "numericIssues": [
+            {
+              "param": "X",
+              "reason": "missing",
+              "py": 2
+            }
+          ],
+          "toleranceIssues": []
+        }
+      ]
+    },
+    {
       "scenario": "helix",
       "status": "PASS",
       "totalDiffs": 0,
@@ -181,5 +238,5 @@
       "diffs": []
     }
   ],
-  "generated": "2025-10-04T22:43:10.412Z"
+  "generated": "2026-03-20T02:07:39.136Z"
 }

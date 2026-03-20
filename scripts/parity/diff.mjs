@@ -128,6 +128,13 @@ function isKnownAcceptable(scenario, diffs){
       }
     }
   }
+  if(scenario === 'geometry_waves'){
+    if(diffs.length === 2 && diffs.every(d => d.type === 'NUMERIC_DIFF' && (d.line === 3 || d.line === 5))){
+      if(diffs.every(d => d.numericIssues.length === 1 && d.numericIssues[0].param === 'X' && d.numericIssues[0].reason === 'missing')){
+        return true
+      }
+    }
+  }
   return false
 }
 

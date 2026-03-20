@@ -4,10 +4,34 @@ import { polar_to_point, point_to_polar } from './polar.js'
 import { ramp_xyz, ramp_polar } from './ramping.js'
 import { centreXY_3pt } from './midpoint.js'
 
+/**
+ * Generates a 2D arc from a center point, covering a specific angular sweep.
+ * 
+ * @param centre - The geometric center of the arc curve.
+ * @param radius - Spatial radius of the arc.
+ * @param start_angle - The starting polar angle in radians.
+ * @param arc_angle - The total sweep angle in radians (positive = CCW).
+ * @param segments - Interpolation segments (default 100).
+ * @returns Array of Points traversing the arc continuously.
+ */
 export function arcXY(centre: Point, radius: number, start_angle: number, arc_angle: number, segments=100): Point[] {
   return linspace(start_angle, start_angle+arc_angle, segments+1).map(a=> polar_to_point(centre, radius, a))
 }
 
+/**
+ * Generates a complex arc whose radius and Z height vary steadily over the sweep.
+ * 
+ * Useful for drawing transition shapes like the sloped ramps in a spiral vase mode.
+ * 
+ * @param centre - The central origin metric.
+ * @param start_radius - Initial radius at `start_angle`.
+ * @param start_angle - Entering polar angle.
+ * @param arc_angle - The total sweep angle radially.
+ * @param segments - Polygon resolution.
+ * @param radius_change - The total linear delta applied to radius over the sweep length.
+ * @param z_change - The total vertical delta applied to Z over the sweep length.
+ * @returns Array of Points defining a fully transitional 3D arc.
+ */
 export function variable_arcXY(centre: Point, start_radius: number, start_angle: number, arc_angle: number, segments=100, radius_change=0, z_change=0): Point[] {
   let arc = arcXY(centre, start_radius, start_angle, arc_angle, segments)
   arc = ramp_xyz(arc, 0, 0, z_change)

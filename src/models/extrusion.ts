@@ -9,10 +9,15 @@ import { formatPrecision6, formatExtrusion, formatCoordinate } from '../util/for
  * extrusion path, which is critical for accurate volumetric E value generation.
  */
 export class ExtrusionGeometry extends BaseModelPlus {
+  /** Selected area calculation method (`rectangle` recommended for default). */
   area_model?: 'rectangle' | 'stadium' | 'circle' | 'manual'
+  /** Width of the extruded line. */
   width?: number
+  /** Height (layer height) of the extruded line. */
   height?: number
+  /** Fixed diameter if using a circular profile. */
   diameter?: number
+  /** Explicit precalcuated cross-sectional area. */
   area?: number
   static readonly typeName = 'ExtrusionGeometry'
   constructor(init?: Partial<ExtrusionGeometry>) { super(init) }
@@ -96,10 +101,14 @@ export class StationaryExtrusion extends BaseModelPlus {
  * Insert an instance with `{ on: true }` to begin extruding along future Points.
  */
 export class Extruder extends BaseModelPlus {
+  /** Extrusion state: `true` to extrude along path, `false` to restrict toolhead. */
   on?: boolean
   // gcode related
+  /** Volume tracking units: `mm` (filament length) or `mm3` (volumetric). */
   units?: 'mm' | 'mm3'
+  /** Feed filament diameter (required if units is `mm`). */
   dia_feed?: number
+  /** If `true`, G-code will use relative extrusion amounts (M83) and reset between moves. */
   relative_gcode?: boolean
   volume_to_e?: number
   total_volume?: number

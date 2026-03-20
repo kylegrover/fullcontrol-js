@@ -9,12 +9,18 @@ import { calculateColor, type RGBColor } from '../pipeline/visualization-colors.
  * It stores X, Y, and Z coordinates along with optional extrusion and speed overrides.
  */
 export class Point extends BaseModelPlus {
+  /** The X coordinate in millimeters. */
   x?: number
+  /** The Y coordinate in millimeters. */
   y?: number
+  /** The Z coordinate in millimeters. */
   z?: number
-  color?: [number, number, number] // optional for parity with visualization
-  extrude?: boolean // whether this move should extrude
-  speed?: number // optional per-move speed override
+  /** Optional RGB array for rendering this specific point in visualization. */
+  color?: [number, number, number]
+  /** Set to `true` to extrude to this point, or `false` for a travel move. */
+  extrude?: boolean
+  /** Override the current printer feedrate specifically for this movement. */
+  speed?: number
   static readonly typeName = 'Point'
   constructor(init?: Partial<Point>) { super(init) }
   toJSON() { return { x: this.x, y: this.y, z: this.z, color: this.color, extrude: this.extrude, speed: this.speed } }

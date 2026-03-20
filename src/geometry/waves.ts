@@ -4,6 +4,18 @@ import { polar_to_point } from './polar.js'
 import { move, move_geometry } from './move.js'
 import { move_polar } from './move_polar.js'
 
+/**
+ * Generates an array of `Point`s forming a 2D square wave pattern.
+ * 
+ * @param start - The starting point of the wave sequence.
+ * @param direction_polar - The overall direction angle (radians) the wave travels along.
+ * @param amplitude - The distance the wave peaks extend perpendicularly from the travel axis.
+ * @param line_spacing - The linear travel distance between each perpendicular peak.
+ * @param periods - The number of full wave cycles to generate.
+ * @param extra_half_period - Set to true to add an extra half-cycle at the end.
+ * @param extra_end_line - Set to true to emit a final travel segment matching the axis direction.
+ * @returns Array of Points traversing the square wave.
+ */
 export function squarewaveXYpolar(start: Point, direction_polar: number, amplitude: number, line_spacing: number, periods: number, extra_half_period=false, extra_end_line=false): Point[] {
   const steps: Point[] = [start.copy<Point>()]
   for (let i=0;i<periods;i++) {
@@ -41,6 +53,19 @@ export function trianglewaveXYpolar(start: Point, direction_polar: number, ampli
   return steps
 }
 
+/**
+ * Generates an array of `Point`s forming a 2D sinusoidal wave pattern.
+ * 
+ * @param start - The starting point of the wave sequence.
+ * @param direction_polar - The overall direction angle (radians) the wave travels along.
+ * @param amplitude - The peak amplitude of the sine wave.
+ * @param period_length - The spatial length of one full cycle along the travel axis.
+ * @param periods - The number of full wave cycles to generate.
+ * @param segments_per_period - The resolution (number of points) generated per cycle.
+ * @param extra_half_period - Set to true to add an extra half-cycle at the end.
+ * @param phase_shift - The starting phase shift of the sine wave in radians.
+ * @returns Array of Points defining a smooth sine wave.
+ */
 export function sinewaveXYpolar(start: Point, direction_polar: number, amplitude: number, period_length: number, periods: number, segments_per_period=16, extra_half_period=false, phase_shift=0): Point[] {
   const steps: Point[] = []
   const totalSegments = periods*segments_per_period + (extra_half_period? Math.floor(0.5*segments_per_period):0)

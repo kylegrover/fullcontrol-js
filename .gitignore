@@ -2,9 +2,10 @@ node_modules
 dist
 
 .DS_Store
-._*
+._*.log
+coverage/
+docs/api
 
-.vscode
 
 
 *.tgz

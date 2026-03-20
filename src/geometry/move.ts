@@ -1,6 +1,11 @@
 import { Point } from '../models/point.js'
 import { Vector } from '../models/vector.js'
 
+/**
+ * Translates a single point or array of points by a given spatial vector.
+ * 
+ * If `copy` is true, generates multiple translated copies iteratively.
+ */
 export function move(geometry: Point | any[], vector: Vector, copy=false, copy_quantity=2): Point | any[] {
   return copy ? copy_geometry(geometry, vector, copy_quantity) : move_geometry(geometry, vector)
 }

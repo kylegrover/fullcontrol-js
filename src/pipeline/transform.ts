@@ -10,6 +10,17 @@ export interface TransformResult {
   state: State 
 }
 
+/**
+ * Processes an array of geometric steps into G-code or Visualization Plot Data.
+ * 
+ * This is the primary FullControl rendering pipeline. It resolves state, overrides, 
+ * extrusions, and feedrates into a continuous machine toolpath.
+ * 
+ * @param steps - The geometric toolpath sequence (array of `Point` or geometry lists).
+ * @param result_type - Output format: `'gcode'` or `'plot'` (3D preview).
+ * @param controls - Optional initialization parameters (e.g., `printer_name`).
+ * @returns A result object containing the generated G-code, plot data, and final pipeline state.
+ */
 export function transform(
   steps: any[], 
   result_type: 'gcode' | 'plot' = 'gcode', 

@@ -2,6 +2,9 @@ import { Point } from '../models/point.js'
 import { arcXY, variable_arcXY, elliptical_arcXY } from './arcs.js'
 import { centreXY_3pt } from './midpoint.js'
 
+/**
+ * Generates an array of `Point`s forming a 2D rectangle in the XY plane.
+ */
 export function rectangleXY(start: Point, x_size: number, y_size: number, cw=false): Point[] {
   const p1 = new Point({ x: start.x! + x_size * (cw?0:1), y: start.y! + y_size * (cw?1:0), z: start.z })
   const p2 = new Point({ x: start.x! + x_size, y: start.y! + y_size, z: start.z })
@@ -9,6 +12,9 @@ export function rectangleXY(start: Point, x_size: number, y_size: number, cw=fal
   return [start.copy<Point>(), p1, p2, p3, start.copy<Point>()]
 }
 
+/**
+ * Generates an array of `Point`s forming a 2D circle in the XY plane.
+ */
 export function circleXY(centre: Point, radius: number, start_angle: number, segments=100, cw=false): Point[] {
   return arcXY(centre, radius, start_angle, Math.PI*2 * (1 - (2*Number(cw))), segments)
 }
@@ -24,18 +30,30 @@ export function circleXY_3pt(p1: Point, p2: Point, p3: Point, start_angle?: numb
   return arcXY(centre, radius, start_angle, Math.PI*2 * (1 - (2*Number(cw))), segments)
 }
 
+/**
+ * Generates an array of `Point`s forming a 2D ellipse in the XY plane.
+ */
 export function ellipseXY(centre: Point, a: number, b: number, start_angle: number, segments=100, cw=false): Point[] {
   return elliptical_arcXY(centre, a, b, start_angle, Math.PI*2 * (1 - (2*Number(cw))), segments)
 }
 
+/**
+ * Generates an array of `Point`s forming a 2D regular polygon in the XY plane.
+ */
 export function polygonXY(centre: Point, enclosing_radius: number, start_angle: number, sides: number, cw=false): Point[] {
   return arcXY(centre, enclosing_radius, start_angle, Math.PI*2 * (1 - (2*Number(cw))), sides)
 }
 
+/**
+ * Generates an array of `Point`s forming a 2D Archimedean spiral in the XY plane.
+ */
 export function spiralXY(centre: Point, start_radius: number, end_radius: number, start_angle: number, n_turns: number, segments: number, cw=false): Point[] {
   return variable_arcXY(centre, start_radius, start_angle, n_turns*Math.PI*2 * (1 - (2*Number(cw))), segments, end_radius-start_radius, 0)
 }
 
+/**
+ * Generates an array of `Point`s forming a 3D helix along the Z axis.
+ */
 export function helixZ(centre: Point, start_radius: number, end_radius: number, start_angle: number, n_turns: number, pitch_z: number, segments: number, cw=false): Point[] {
   return variable_arcXY(centre, start_radius, start_angle, n_turns*Math.PI*2 * (1 - (2*Number(cw))), segments, end_radius-start_radius, pitch_z*n_turns)
 }

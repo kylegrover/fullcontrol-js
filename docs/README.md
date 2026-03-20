@@ -4,6 +4,7 @@ This directory contains progressively expanding documentation for the **FullCont
 
 ## Index
 
+- [API Reference (Auto-Generated)](./api/index.html)
 - [Overview](./overview.md)
 - [Getting Started](./getting-started.md)
 - [Primers](./primers.md)

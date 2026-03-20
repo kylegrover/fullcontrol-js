@@ -1,6 +1,12 @@
 import { BaseModelPlus } from '../core/base-model.js'
 import { formatFeedrate } from '../util/format.js'
 
+/**
+ * Configures the physical printer limits and movement feedrates.
+ * 
+ * Set `print_speed` and `travel_speed`. You can also override or inject custom
+ * firmware behaviors via the `command_list` mappings.
+ */
 export class Printer extends BaseModelPlus {
   print_speed?: number
   travel_speed?: number

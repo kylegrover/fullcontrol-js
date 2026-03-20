@@ -2,6 +2,12 @@ import { BaseModelPlus } from '../core/base-model.js'
 import { Point } from './point.js'
 import { formatPrecision6, formatExtrusion, formatCoordinate } from '../util/format.js'
 
+/**
+ * Defines the geometric profile of the extruded filament.
+ * 
+ * This model calculates the cross-sectional area of the 
+ * extrusion path, which is critical for accurate volumetric E value generation.
+ */
 export class ExtrusionGeometry extends BaseModelPlus {
   area_model?: 'rectangle' | 'stadium' | 'circle' | 'manual'
   width?: number
@@ -62,6 +68,10 @@ export class ExtrusionGeometry extends BaseModelPlus {
   }
 }
 
+/**
+ * Injects a standalone extrusion or retraction without spatial movement.
+ * Useful for purging, priming, or advanced manual retraction blobs.
+ */
 export class StationaryExtrusion extends BaseModelPlus {
   volume!: number
   speed!: number
@@ -79,6 +89,12 @@ export class StationaryExtrusion extends BaseModelPlus {
   }
 }
 
+/**
+ * Configures the extruder tool behavior and state.
+ * 
+ * Tracks filament volume, extrusion units (`mm` vs `mm3`), and toggles extrusion on/off.
+ * Insert an instance with `{ on: true }` to begin extruding along future Points.
+ */
 export class Extruder extends BaseModelPlus {
   on?: boolean
   // gcode related

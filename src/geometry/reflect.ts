@@ -8,6 +8,11 @@ export function reflectXY_mc(p: Point, m_reflect: number, c_reflect: number): Po
   return new Point({ x: (p.x ?? 0) + 2 * (x - (p.x ?? 0)), y: (p.y ?? 0) + 2 * (y - (p.y ?? 0)), z: p.z })
 }
 
+/**
+ * Reflects a point's Cartesian coordinates across a 2D line defined by points `p1` and `p2`.
+ * 
+ * Does not modify the Z coordinate. Maps cleanly to Python's `fc.reflectXY()`.
+ */
 export function reflectXY(p: Point, p1: Point, p2: Point): Point {
   if (p2.x === p1.x) return new Point({ x: (p.x ?? 0) + 2 * (p1.x! - (p.x ?? 0)), y: p.y, z: p.z })
   if (p2.y === p1.y) return new Point({ x: p.x, y: (p.y ?? 0) + 2 * (p1.y! - (p.y ?? 0)), z: p.z })

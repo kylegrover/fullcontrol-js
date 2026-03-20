@@ -2,6 +2,12 @@ import { BaseModelPlus } from '../core/base-model.js'
 import { formatCoordinate } from '../util/format.js'
 import { calculateColor, type RGBColor } from '../pipeline/visualization-colors.js'
 
+/**
+ * Represents a spatial coordinate and its associated toolpath state.
+ * 
+ * The `Point` class is the fundamental building block of all FullControl designs.
+ * It stores X, Y, and Z coordinates along with optional extrusion and speed overrides.
+ */
 export class Point extends BaseModelPlus {
   x?: number
   y?: number

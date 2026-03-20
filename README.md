@@ -9,6 +9,8 @@ Runtime Support: Node 16+ (ES2020 output) and modern evergreen browsers.
 
 FullControl JS follows the FullControl python codebase in every way including function names and snake_case. Refer to the FullControl official repo, examples, and documentation for the best up to date information on the library.
 
+**[📚 View the Auto-Generated API Reference](./docs/api/index.html)** for a complete, searchable list of all exported classes, methods, and geometry helpers.
+
 ## Install
 ```bash
 npm install fullcontrol-js

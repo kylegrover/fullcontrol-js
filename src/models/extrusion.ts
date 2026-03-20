@@ -7,6 +7,10 @@ import { formatPrecision6, formatExtrusion, formatCoordinate } from '../util/for
  * 
  * This model calculates the cross-sectional area of the 
  * extrusion path, which is critical for accurate volumetric E value generation.
+ * Automatically overrides mathematical line sizes in the plot/gcode pipeline to simulate an 
+ * extrusion path, which is critical for accurate volumetric E value generation.
+ * 
+ * @category Core Models
  */
 export class ExtrusionGeometry extends BaseModelPlus {
   /** Selected area calculation method (`rectangle` recommended for default). */
@@ -99,6 +103,8 @@ export class StationaryExtrusion extends BaseModelPlus {
  * 
  * Tracks filament volume, extrusion units (`mm` vs `mm3`), and toggles extrusion on/off.
  * Insert an instance with `{ on: true }` to begin extruding along future Points.
+ * 
+ * @category Core Models
  */
 export class Extruder extends BaseModelPlus {
   /** Extrusion state: `true` to extrude along path, `false` to restrict toolhead. */

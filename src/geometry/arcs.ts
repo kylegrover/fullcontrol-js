@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Shapes
+ */
 import { Point } from '../models/point.js'
 import { linspace } from '../util/extra.js'
 import { polar_to_point, point_to_polar } from './polar.js'

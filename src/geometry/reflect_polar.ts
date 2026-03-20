@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Math & Transforms
+ */
 import { Point } from '../models/point.js'
 import { reflectXY } from './reflect.js'
 import { polar_to_point } from './polar.js'

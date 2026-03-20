@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Math & Transforms
+ */
 import { Point } from '../models/point.js'
 import { point_to_polar, polar_to_point } from './polar.js'
 import { check_points } from '../util/check.js'

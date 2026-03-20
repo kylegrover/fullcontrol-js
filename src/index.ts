@@ -26,11 +26,8 @@ export * from './geometry/travel_to.js'
 
 // utility functions
 export * from './util/extra.js'
-export * from './util/check.js'
 
 // pipeline / transform
-export * from './pipeline/state.js'
-export * from './pipeline/gcode.js'
 export * from './pipeline/visualize.js'
 export * from './pipeline/transform.js'
 

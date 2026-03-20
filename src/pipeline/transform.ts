@@ -20,6 +20,8 @@ export interface TransformResult {
  * @param result_type - Output format: `'gcode'` or `'plot'` (3D preview).
  * @param controls - Optional initialization parameters (e.g., `printer_name`).
  * @returns A result object containing the generated G-code, plot data, and final pipeline state.
+ * 
+ * @category Pipeline
  */
 export function transform(
   steps: any[], 

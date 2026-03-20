@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Math & Transforms
+ */
 import { Point } from '../models/point.js'
 import { Vector } from '../models/vector.js'
 import { check_points } from '../util/check.js'

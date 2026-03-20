@@ -9,6 +9,7 @@ import { Extruder } from '../models/extrusion.js'
 /**
  * BoundingBox - calculates and stores geometric bounds of all points
  * Matches Python's fullcontrol.visualize.bounding_box.BoundingBox
+ * @internal
  */
 export class BoundingBox {
   minx?: number
@@ -66,6 +67,7 @@ export class BoundingBox {
  * Path - represents a continuous segment with consistent extruder state
  * Matches Python's fullcontrol.visualize.path.Path
  * A new path is created each time the extruder changes on/off
+ * @internal
  */
 export class Path {
   xvals: number[] = []

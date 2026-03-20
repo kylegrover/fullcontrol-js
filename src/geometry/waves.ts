@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Waves
+ */
 import { Point } from '../models/point.js'
 import { Vector } from '../models/vector.js'
 import { polar_to_point } from './polar.js'

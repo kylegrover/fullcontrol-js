@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Shapes
+ */
 import { Point } from '../models/point.js'
 import { arcXY, variable_arcXY, elliptical_arcXY } from './arcs.js'
 import { centreXY_3pt } from './midpoint.js'

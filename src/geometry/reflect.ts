@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Math & Transforms
+ */
 import { Point } from '../models/point.js'
 
 export function reflectXY_mc(p: Point, m_reflect: number, c_reflect: number): Point {

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "readme": "README.md",
+  "name": "FullControl JS",
+  "excludeInternal": true,
+  "categorizeByGroup": false,
+  "categoryOrder": [
+    "Pipeline",
+    "Core Models",
+    "Geometry: Shapes",
+    "Geometry: Waves",
+    "Geometry: Math & Transforms",
+    "*",
+    "Utilities"
+  ],
+  "defaultCategory": "Utilities",
+  "hideGenerator": true,
+  "githubPages": false
+}

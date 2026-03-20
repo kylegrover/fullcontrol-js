@@ -7,6 +7,8 @@ import { calculateColor, type RGBColor } from '../pipeline/visualization-colors.
  * 
  * The `Point` class is the fundamental building block of all FullControl designs.
  * It stores X, Y, and Z coordinates along with optional extrusion and speed overrides.
+ * 
+ * @category Core Models
  */
 export class Point extends BaseModelPlus {
   /** The X coordinate in millimeters. */

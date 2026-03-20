@@ -1,3 +1,7 @@
+/**
+ * @module
+ * @category Geometry: Math & Transforms
+ */
 import { Point } from '../models/point.js'
 import { linspace } from '../util/extra.js'
 import { interpolated_point } from './midpoint.js'

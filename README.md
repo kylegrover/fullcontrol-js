@@ -9,7 +9,7 @@ Runtime Support: Node 16+ (ES2020 output) and modern evergreen browsers.
 
 FullControl JS follows the FullControl python codebase in every way including function names and snake_case. Refer to the FullControl official repo, examples, and documentation for the best up to date information on the library.
 
-**[📚 View the Auto-Generated API Reference](./docs/api/index.html)** for a complete, searchable list of all exported classes, methods, and geometry helpers.
+**[📚 View the API Reference](https://kylegrover.github.io/fullcontrol-js/)** for a complete, searchable list of all exported classes, methods, and geometry helpers.
 
 ## Install
 ```bash
@@ -165,6 +165,8 @@ git push && git push --tags
 **Note:** The `prepublishOnly` script automatically runs parity tests, build, and typecheck before publishing to ensure quality.
 
 > **Parity Status**: ✅ **100% Complete** - All 23 automated parity tests passing (20 G-code + 3 visualization). `pythonParity` in `package.json` indicates the Python version matched. The JavaScript implementation produces identical outputs (within numeric tolerances) to the Python version for both G-code generation and visualization.
+
+**Note:** Parity tests run on fullcontrol python branch bf-zgradient-edge-case, pending PR upstream. 
 
 ## Parity Harness
 Python remains the source of truth. This repository includes an automated parity harness that runs paired real scripts (one Python, one JS) and performs tolerant G-code diffs.

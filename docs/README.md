@@ -8,7 +8,7 @@ This directory contains progressively expanding documentation for the **FullCont
 - [Getting Started](./getting-started.md)
 - [Primers](./primers.md)
 - [Devices & Dynamic Loading](./devices.md)
-- [Parity Matrix](./parity.md)
+- [Parity Matrix](../PARITY.md)
 - [Migration Notes (Python → JS)](./migration.md)
 
 ## Coming Soon

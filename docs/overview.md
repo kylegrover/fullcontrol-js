@@ -34,8 +34,7 @@ Core concepts:
 - Banner & tips moved to stdout only (not embedded in G-code) in silent-friendly mode.
 
 ### Still Under Review / Future Work
-- Additional visualization parity beyond data shape.
 - Edge-case feedrate parity: complex retraction patterns.
 - Multi-tool / advanced devices (if/when Python adds or if not yet ported).
 
-See [parity.md](./parity.md) for an itemized list.
+See [parity.md](../PARITY.md) for an itemized list.
